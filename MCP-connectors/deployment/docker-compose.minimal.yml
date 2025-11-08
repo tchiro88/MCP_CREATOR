@@ -1,0 +1,97 @@
+# Minimal MCP Infrastructure - Bare Bones Setup
+# Just the essentials for remote MCP access from any device
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Cloudflare Tunnel - Secure remote access
+  # ============================================================================
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # GitHub MCP Server - Git operations and GitHub integration
+  # Uses official @modelcontextprotocol/server-github
+  # ============================================================================
+  mcp-github:
+    image: mcp/server-github:latest
+    container_name: mcp-github
+    ports:
+      - "3001:3000"
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
+    # Note: If this image doesn't exist, we'll create a simple custom one
+
+  # ============================================================================
+  # Filesystem MCP Server - Access files and directories
+  # Uses official @modelcontextprotocol/server-filesystem
+  # ============================================================================
+  mcp-filesystem:
+    image: mcp/server-filesystem:latest
+    container_name: mcp-filesystem
+    ports:
+      - "3002:3000"
+    environment:
+      - ALLOWED_DIRECTORIES=/data,/workspace
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    volumes:
+      - ./data:/data
+      - ./workspace:/workspace
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Google Drive MCP Server (when available)
+  # Placeholder - you'll need to find/build this
+  # ============================================================================
+  # mcp-gdrive:
+  #   image: your-gdrive-mcp:latest
+  #   container_name: mcp-gdrive
+  #   ports:
+  #     - "3003:3000"
+  #   environment:
+  #     - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+  #     - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+  #     - MCP_TRANSPORT=http
+  #     - PORT=3000
+  #   networks:
+  #     - mcp_network
+  #   restart: unless-stopped
+
+  # ============================================================================
+  # Gmail MCP Server (when available)
+  # Placeholder - you'll need to find/build this
+  # ============================================================================
+  # mcp-gmail:
+  #   image: your-gmail-mcp:latest
+  #   container_name: mcp-gmail
+  #   ports:
+  #     - "3004:3000"
+  #   environment:
+  #     - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+  #     - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+  #     - MCP_TRANSPORT=http
+  #     - PORT=3000
+  #   networks:
+  #     - mcp_network
+  #   restart: unless-stopped
+
+networks:
+  mcp_network:
+    driver: bridge
+    name: mcp_network
