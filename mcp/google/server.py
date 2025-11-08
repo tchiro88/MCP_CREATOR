@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
 Google Services MCP Server
-Provides access to Gmail, Google Drive, and Google Calendar
+Provides access to Gmail, Google Drive, Google Calendar, and Google Photos
 
 Features:
 - Gmail: Read, search, send emails
 - Google Drive: List, search, read, upload files
 - Calendar: List events, create events, search calendar
+- Photos: List albums, search photos, view photo details
 """
 
 import os
@@ -47,6 +48,7 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive.file',
     'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/photoslibrary.readonly',
 ]
 
 # File paths
@@ -314,6 +316,91 @@ def calendar_create_event(summary: str, start_time: str, end_time: str,
         return {'error': f'Failed to create event: {error}'}
 
 # ============================================================================
+# Google Photos Functions
+# ============================================================================
+
+def photos_list_albums(max_results: int = 20) -> list[dict]:
+    """List photo albums"""
+    try:
+        creds = get_credentials()
+        service = build('photoslibrary', 'v1', credentials=creds, static_discovery=False)
+
+        results = service.albums().list(
+            pageSize=min(max_results, 50)
+        ).execute()
+
+        albums = results.get('albums', [])
+
+        return [{
+            'id': album['id'],
+            'title': album.get('title', 'Untitled'),
+            'productUrl': album.get('productUrl', ''),
+            'mediaItemsCount': album.get('mediaItemsCount', 'Unknown'),
+            'coverPhotoUrl': album.get('coverPhotoBaseUrl', '')
+        } for album in albums]
+
+    except HttpError as error:
+        return [{'error': f'Photos API error: {error}'}]
+
+def photos_search(album_id: Optional[str] = None, max_results: int = 20) -> list[dict]:
+    """Search for photos, optionally in a specific album"""
+    try:
+        creds = get_credentials()
+        service = build('photoslibrary', 'v1', credentials=creds, static_discovery=False)
+
+        body = {
+            'pageSize': min(max_results, 100)
+        }
+
+        if album_id:
+            body['albumId'] = album_id
+
+        results = service.mediaItems().search(body=body).execute()
+
+        items = results.get('mediaItems', [])
+
+        return [{
+            'id': item['id'],
+            'filename': item.get('filename', 'Unknown'),
+            'mimeType': item.get('mimeType', ''),
+            'creationTime': item.get('mediaMetadata', {}).get('creationTime', ''),
+            'width': item.get('mediaMetadata', {}).get('width', ''),
+            'height': item.get('mediaMetadata', {}).get('height', ''),
+            'productUrl': item.get('productUrl', ''),
+            'baseUrl': item.get('baseUrl', '')
+        } for item in items]
+
+    except HttpError as error:
+        return [{'error': f'Photos search error: {error}'}]
+
+def photos_get_media_item(media_id: str) -> dict:
+    """Get details of a specific photo/video"""
+    try:
+        creds = get_credentials()
+        service = build('photoslibrary', 'v1', credentials=creds, static_discovery=False)
+
+        item = service.mediaItems().get(mediaItemId=media_id).execute()
+
+        metadata = item.get('mediaMetadata', {})
+
+        return {
+            'id': item['id'],
+            'filename': item.get('filename', ''),
+            'mimeType': item.get('mimeType', ''),
+            'productUrl': item.get('productUrl', ''),
+            'baseUrl': item.get('baseUrl', ''),
+            'description': item.get('description', ''),
+            'creationTime': metadata.get('creationTime', ''),
+            'width': metadata.get('width', ''),
+            'height': metadata.get('height', ''),
+            'photo': metadata.get('photo', {}),
+            'video': metadata.get('video', {})
+        }
+
+    except HttpError as error:
+        return {'error': f'Failed to get media item: {error}'}
+
+# ============================================================================
 # MCP Server
 # ============================================================================
 
@@ -340,6 +427,18 @@ async def list_resources() -> list[dict[str, Any]]:
             "name": "Calendar Events",
             "description": "Upcoming calendar events",
             "mimeType": "application/json"
+        },
+        {
+            "uri": "photos://albums",
+            "name": "Google Photos Albums",
+            "description": "Photo albums in Google Photos",
+            "mimeType": "application/json"
+        },
+        {
+            "uri": "photos://recent",
+            "name": "Recent Photos",
+            "description": "Recently added photos",
+            "mimeType": "application/json"
         }
     ]
 
@@ -357,6 +456,14 @@ async def read_resource(uri: str) -> str:
     elif uri == "calendar://events":
         events = calendar_list_events(max_results=10)
         return json.dumps(events, indent=2)
+
+    elif uri == "photos://albums":
+        albums = photos_list_albums(max_results=20)
+        return json.dumps(albums, indent=2)
+
+    elif uri == "photos://recent":
+        photos = photos_search(max_results=20)
+        return json.dumps(photos, indent=2)
 
     raise ValueError(f"Unknown resource: {uri}")
 
@@ -504,6 +611,55 @@ async def list_tools() -> list[dict[str, Any]]:
                 },
                 "required": ["summary", "start_time", "end_time"]
             }
+        },
+        # Photos tools
+        {
+            "name": "photos_list_albums",
+            "description": "List photo albums in Google Photos",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "max_results": {
+                        "type": "number",
+                        "description": "Maximum number of albums (default: 20)",
+                        "default": 20
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "photos_search",
+            "description": "Search for photos, optionally in a specific album",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "album_id": {
+                        "type": "string",
+                        "description": "Album ID to search within (optional)"
+                    },
+                    "max_results": {
+                        "type": "number",
+                        "description": "Maximum number of photos (default: 20)",
+                        "default": 20
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "photos_get_media",
+            "description": "Get details of a specific photo or video",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "media_id": {
+                        "type": "string",
+                        "description": "Media item ID from Google Photos"
+                    }
+                },
+                "required": ["media_id"]
+            }
         }
     ]
 
@@ -556,6 +712,22 @@ async def call_tool(name: str, arguments: dict) -> list[dict[str, Any]]:
             description=arguments.get("description", ""),
             location=arguments.get("location", "")
         )
+        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+    # Photos tools
+    elif name == "photos_list_albums":
+        max_results = arguments.get("max_results", 20)
+        result = photos_list_albums(max_results)
+        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+    elif name == "photos_search":
+        album_id = arguments.get("album_id")
+        max_results = arguments.get("max_results", 20)
+        result = photos_search(album_id, max_results)
+        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+    elif name == "photos_get_media":
+        result = photos_get_media_item(arguments["media_id"])
         return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
     raise ValueError(f"Unknown tool: {name}")
