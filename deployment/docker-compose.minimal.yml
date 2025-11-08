@@ -56,40 +56,49 @@ services:
     restart: unless-stopped
 
   # ============================================================================
-  # Google Drive MCP Server (when available)
-  # Placeholder - you'll need to find/build this
+  # Google Services MCP Server - Gmail, Drive, Calendar
+  # Custom built MCP server in /mcp/google
   # ============================================================================
-  # mcp-gdrive:
-  #   image: your-gdrive-mcp:latest
-  #   container_name: mcp-gdrive
-  #   ports:
-  #     - "3003:3000"
-  #   environment:
-  #     - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-  #     - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-  #     - MCP_TRANSPORT=http
-  #     - PORT=3000
-  #   networks:
-  #     - mcp_network
-  #   restart: unless-stopped
+  mcp-google:
+    build:
+      context: ../mcp/google
+      dockerfile: Dockerfile
+    container_name: mcp-google
+    ports:
+      - "3004:3000"
+    environment:
+      - GOOGLE_TOKEN_FILE=/app/credentials/token.json
+      - GOOGLE_CREDENTIALS_FILE=/app/credentials/credentials.json
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    volumes:
+      # Mount your Google OAuth credentials
+      # After authenticating locally, copy token.json and credentials.json here
+      - ./credentials/google:/app/credentials:ro
+    networks:
+      - mcp_network
+    restart: unless-stopped
+    # Note: You must authenticate locally first to generate token.json
+    # See mcp/google/README.md for instructions
 
   # ============================================================================
-  # Gmail MCP Server (when available)
-  # Placeholder - you'll need to find/build this
+  # Todoist MCP Server - Task management
+  # Custom built MCP server in /mcp/todoist
   # ============================================================================
-  # mcp-gmail:
-  #   image: your-gmail-mcp:latest
-  #   container_name: mcp-gmail
-  #   ports:
-  #     - "3004:3000"
-  #   environment:
-  #     - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-  #     - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-  #     - MCP_TRANSPORT=http
-  #     - PORT=3000
-  #   networks:
-  #     - mcp_network
-  #   restart: unless-stopped
+  mcp-todoist:
+    build:
+      context: ../mcp/todoist
+      dockerfile: Dockerfile
+    container_name: mcp-todoist
+    ports:
+      - "3005:3000"
+    environment:
+      - TODOIST_API_TOKEN=${TODOIST_API_TOKEN}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
 
 networks:
   mcp_network:

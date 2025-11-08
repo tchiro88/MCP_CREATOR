@@ -13,13 +13,13 @@ ingress:
   - hostname: files.yourdomain.com
     service: http://mcp-filesystem:3000
 
-  # Gmail MCP (when you add it)
-  # - hostname: gmail.yourdomain.com
-  #   service: http://mcp-gmail:3000
+  # Google Services MCP (Gmail, Drive, Calendar)
+  - hostname: google.yourdomain.com
+    service: http://mcp-google:3000
 
-  # Google Drive MCP (when you add it)
-  # - hostname: drive.yourdomain.com
-  #   service: http://mcp-gdrive:3000
+  # Todoist MCP Server
+  - hostname: todoist.yourdomain.com
+    service: http://mcp-todoist:3000
 
   # Catch-all
   - service: http_status:404
