@@ -1,0 +1,199 @@
+# Docker Compose for Self-Hosted MCP Infrastructure
+# This setup includes:
+# - n8n workflow automation
+# - n8n-MCP server
+# - Cloudflare Tunnel (cloudflared)
+# - Example custom MCP server
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # n8n - Workflow Automation Platform
+  # ============================================================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    environment:
+      # Basic Authentication
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-changeme}
+
+      # Webhook URL (change to your domain if using Cloudflare Tunnel)
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678}
+
+      # Timezone
+      - GENERIC_TIMEZONE=${TIMEZONE:-America/New_York}
+      - TZ=${TIMEZONE:-America/New_York}
+
+      # Execution mode
+      - EXECUTIONS_MODE=regular
+
+      # Disable telemetry (optional)
+      - N8N_DIAGNOSTICS_ENABLED=false
+
+      # Enable API
+      - N8N_API_ENABLED=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/backup:/backup
+    networks:
+      - mcp_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # n8n MCP Server - Bridge between AI and n8n
+  # ============================================================================
+  n8n-mcp:
+    image: ghcr.io/czlonkowski/n8n-mcp:latest
+    container_name: n8n-mcp
+    ports:
+      - "3003:3000"
+    environment:
+      # n8n Connection
+      - N8N_API_URL=http://n8n:5678
+      - N8N_API_KEY=${N8N_API_KEY}
+
+      # MCP Server Mode
+      - MCP_MODE=http
+      - PORT=3000
+
+      # Database adapter (better-sqlite3 recommended for production)
+      - DATABASE_ADAPTER=better-sqlite3
+
+      # Disable telemetry (optional)
+      - N8N_MCP_TELEMETRY_DISABLED=true
+    depends_on:
+      n8n:
+        condition: service_healthy
+    networks:
+      - mcp_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # Cloudflare Tunnel - Secure access without port forwarding
+  # ============================================================================
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    command: tunnel --no-autoupdate run
+    environment:
+      # Option 1: Use tunnel token (easier)
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+
+      # Option 2: Use config file (more flexible, comment out TUNNEL_TOKEN if using this)
+      # Mount your config.yml and credentials.json
+    volumes:
+      # Uncomment if using config file instead of token
+      # - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      # - ./cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
+    depends_on:
+      - n8n-mcp
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Example: Custom MCP Server (GitHub Integration)
+  # Uncomment and customize as needed
+  # ============================================================================
+  # mcp-github:
+  #   build:
+  #     context: ./examples/simple-mcp-server
+  #     dockerfile: Dockerfile
+  #   container_name: mcp-github
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     - GITHUB_TOKEN=${GITHUB_TOKEN}
+  #     - MCP_SERVER_NAME=github-mcp
+  #     - PORT=3000
+  #   networks:
+  #     - mcp_network
+  #   restart: unless-stopped
+
+  # ============================================================================
+  # Example: Database MCP Server
+  # Uncomment and customize as needed
+  # ============================================================================
+  # mcp-database:
+  #   image: your-mcp-database-server:latest
+  #   container_name: mcp-database
+  #   ports:
+  #     - "3002:3000"
+  #   environment:
+  #     - DATABASE_URL=${DATABASE_URL}
+  #     - MCP_SERVER_NAME=database-mcp
+  #     - PORT=3000
+  #   networks:
+  #     - mcp_network
+  #   restart: unless-stopped
+
+  # ============================================================================
+  # Redis - Caching layer (optional but recommended)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mcp_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ============================================================================
+  # PostgreSQL - Database for persistent storage (optional)
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-mcp_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - POSTGRES_DB=${POSTGRES_DB:-mcp_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mcp_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mcp_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  mcp_network:
+    driver: bridge
+    name: mcp_network
+
+volumes:
+  n8n_data:
+    name: n8n_data
+  redis_data:
+    name: redis_data
+  postgres_data:
+    name: postgres_data

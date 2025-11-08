@@ -1,0 +1,168 @@
+# Cloudflare Tunnel Configuration Example
+# Save as: ~/.cloudflared/config.yml (Linux/macOS) or C:\Users\YourUser\.cloudflared\config.yml (Windows)
+#
+# Setup Steps:
+# 1. cloudflared tunnel login
+# 2. cloudflared tunnel create mcp-tunnel
+# 3. Copy the tunnel ID and credentials file path
+# 4. cloudflared tunnel route dns mcp-tunnel mcp.yourdomain.com
+# 5. Update this config with your tunnel ID and credentials
+# 6. cloudflared tunnel run mcp-tunnel
+
+# Your tunnel ID (get from: cloudflared tunnel create)
+tunnel: YOUR_TUNNEL_ID_HERE
+
+# Path to credentials file (created when you run: cloudflared tunnel create)
+credentials-file: /home/youruser/.cloudflared/YOUR_TUNNEL_ID.json
+
+# ============================================================================
+# Ingress Rules - Route hostnames to local services
+# ============================================================================
+
+ingress:
+  # -----------------------------------------------
+  # n8n MCP Server (AI workflow automation)
+  # -----------------------------------------------
+  - hostname: mcp-n8n.yourdomain.com
+    service: http://localhost:3003
+    originRequest:
+      # Optional: Add custom headers
+      httpHostHeader: mcp-n8n.yourdomain.com
+      # Connection timeout
+      connectTimeout: 30s
+      # TLS verification (set to true if using HTTPS locally)
+      noTLSVerify: false
+
+  # -----------------------------------------------
+  # n8n Web Interface (optional)
+  # -----------------------------------------------
+  - hostname: n8n.yourdomain.com
+    service: http://localhost:5678
+    originRequest:
+      httpHostHeader: n8n.yourdomain.com
+      connectTimeout: 30s
+
+  # -----------------------------------------------
+  # Custom MCP Server 1 (e.g., GitHub integration)
+  # -----------------------------------------------
+  - hostname: mcp-github.yourdomain.com
+    service: http://localhost:3001
+    originRequest:
+      httpHostHeader: mcp-github.yourdomain.com
+      connectTimeout: 30s
+
+  # -----------------------------------------------
+  # Custom MCP Server 2 (e.g., Database access)
+  # -----------------------------------------------
+  - hostname: mcp-db.yourdomain.com
+    service: http://localhost:3002
+    originRequest:
+      httpHostHeader: mcp-db.yourdomain.com
+      connectTimeout: 30s
+
+  # -----------------------------------------------
+  # Alternative: Path-based routing (all on one domain)
+  # -----------------------------------------------
+  # Uncomment these and comment out the hostname-based rules above
+  # if you prefer path-based routing
+  #
+  # - hostname: mcp.yourdomain.com
+  #   path: ^/n8n(/.*)?$
+  #   service: http://localhost:3003
+  #
+  # - hostname: mcp.yourdomain.com
+  #   path: ^/github(/.*)?$
+  #   service: http://localhost:3001
+  #
+  # - hostname: mcp.yourdomain.com
+  #   path: ^/database(/.*)?$
+  #   service: http://localhost:3002
+  #
+  # - hostname: mcp.yourdomain.com
+  #   service: http://localhost:8080  # Default catch-all
+
+  # -----------------------------------------------
+  # Catch-all rule (REQUIRED - must be last)
+  # -----------------------------------------------
+  - service: http_status:404
+
+# ============================================================================
+# Optional: Tunnel-level Configuration
+# ============================================================================
+
+# Metrics server (for monitoring tunnel performance)
+# metrics: 0.0.0.0:9090
+
+# Protocol version (defaults to auto, can be 'quic' or 'http2')
+# protocol: auto
+
+# Number of connections to maintain (for high availability)
+# Cloudflare recommends 4 for production
+# replicas: 4
+
+# Grace period before shutting down (useful for zero-downtime deployments)
+# grace-period: 30s
+
+# Log level (options: debug, info, warn, error, fatal)
+# loglevel: info
+
+# Retry settings
+# retries: 5
+
+# ============================================================================
+# Advanced: WebSocket Configuration
+# ============================================================================
+# If your MCP server uses WebSockets (most use HTTP/SSE)
+
+# ingress:
+#   - hostname: mcp-ws.yourdomain.com
+#     service: http://localhost:3004
+#     originRequest:
+#       # Enable WebSocket support
+#       noTLSVerify: false
+#       connectTimeout: 30s
+
+# ============================================================================
+# Advanced: HTTPS Origin (if MCP server uses TLS locally)
+# ============================================================================
+
+# ingress:
+#   - hostname: mcp-secure.yourdomain.com
+#     service: https://localhost:3005
+#     originRequest:
+#       # Path to CA certificate (if self-signed)
+#       caPool: /path/to/ca.pem
+#       # Or disable TLS verification (NOT recommended for production)
+#       noTLSVerify: true
+
+# ============================================================================
+# DNS Routing Commands (run these after creating tunnel)
+# ============================================================================
+#
+# cloudflared tunnel route dns mcp-tunnel mcp-n8n.yourdomain.com
+# cloudflared tunnel route dns mcp-tunnel n8n.yourdomain.com
+# cloudflared tunnel route dns mcp-tunnel mcp-github.yourdomain.com
+# cloudflared tunnel route dns mcp-tunnel mcp-db.yourdomain.com
+
+# ============================================================================
+# Service Management Commands
+# ============================================================================
+#
+# Install as system service:
+#   sudo cloudflared service install
+#
+# Start service:
+#   sudo systemctl start cloudflared     # Linux
+#   sudo brew services start cloudflared # macOS
+#
+# Enable on boot:
+#   sudo systemctl enable cloudflared
+#
+# Check status:
+#   sudo systemctl status cloudflared
+#
+# View logs:
+#   sudo journalctl -u cloudflared -f
+#
+# Stop service:
+#   sudo systemctl stop cloudflared
