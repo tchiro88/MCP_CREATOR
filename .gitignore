@@ -1,0 +1,53 @@
+# Google OAuth Credentials (NEVER COMMIT THESE!)
+mcp/google/credentials.json
+mcp/google/credentials_*.json
+mcp/google/token.json
+
+# Environment files with secrets
+.env
+deployment/.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Node modules (if any)
+node_modules/
+
+# Docker
+docker-compose.override.yml
+
+# Credentials and secrets
+credentials/
+*.pem
+*.key
+*.crt
+*_secret_*
+*-secret-*
