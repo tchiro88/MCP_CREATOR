@@ -1,6 +1,6 @@
 # Google Services MCP Server
 
-Provides MCP access to Gmail, Google Drive, and Google Calendar from any device.
+Provides MCP access to Gmail, Google Drive, Google Calendar, and Google Photos from any device.
 
 ## Features
 
@@ -19,6 +19,11 @@ Provides MCP access to Gmail, Google Drive, and Google Calendar from any device.
 - ➕ Create new events
 - 🔍 Search calendar
 
+### Google Photos
+- 📷 List photo albums
+- 🔍 Search photos
+- 🖼️ View photo details and metadata
+
 ## Prerequisites
 
 1. Google Cloud Project with APIs enabled
@@ -35,6 +40,7 @@ Provides MCP access to Gmail, Google Drive, and Google Calendar from any device.
    - Gmail API
    - Google Drive API
    - Google Calendar API
+   - Google Photos Library API
 
 ### Step 2: Create OAuth Credentials
 
@@ -160,6 +166,16 @@ docker run -d \
 
 **Date format**: ISO 8601 - `2025-11-09T10:00:00Z`
 
+### Google Photos Tools
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `photos_list_albums` | List photo albums | `max_results` |
+| `photos_search` | Search photos | `album_id` (optional), `max_results` |
+| `photos_get_media` | Get photo/video details | `media_id` |
+
+**Note**: Returns photo URLs that are valid for 60 minutes. Use `baseUrl` for viewing photos.
+
 ## Resources
 
 | URI | Description |
@@ -167,6 +183,8 @@ docker run -d \
 | `gmail://inbox` | Recent inbox messages |
 | `drive://files` | Recent Drive files |
 | `calendar://events` | Upcoming calendar events |
+| `photos://albums` | Photo albums |
+| `photos://recent` | Recently added photos |
 
 ## Usage Examples
 
