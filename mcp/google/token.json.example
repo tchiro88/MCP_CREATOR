@@ -1,0 +1,19 @@
+{
+  "token": "YOUR_ACCESS_TOKEN_WILL_BE_GENERATED_AUTOMATICALLY",
+  "refresh_token": "YOUR_REFRESH_TOKEN_WILL_BE_GENERATED_AUTOMATICALLY",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+  "client_secret": "YOUR_CLIENT_SECRET",
+  "scopes": [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events"
+  ],
+  "universe_domain": "googleapis.com",
+  "account": "",
+  "expiry": "WILL_BE_SET_AUTOMATICALLY"
+}
