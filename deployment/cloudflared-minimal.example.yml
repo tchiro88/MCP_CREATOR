@@ -1,25 +1,33 @@
 # Minimal Cloudflare Tunnel Configuration
-# Only routes to essential MCP servers
+# Routes to all 6 MCP servers for remote access
 
 tunnel: YOUR-TUNNEL-ID-HERE
 credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
-  # GitHub MCP Server
+  # GitHub MCP Server - Repository and issue management
   - hostname: github.yourdomain.com
     service: http://mcp-github:3000
 
-  # Filesystem MCP Server
-  - hostname: files.yourdomain.com
-    service: http://mcp-filesystem:3000
-
-  # Google Services MCP (Gmail, Drive, Calendar)
+  # Google Services MCP (Gmail, Drive, Calendar, Photos)
   - hostname: google.yourdomain.com
     service: http://mcp-google:3000
 
-  # Todoist MCP Server
+  # Todoist MCP Server - Task management
   - hostname: todoist.yourdomain.com
     service: http://mcp-todoist:3000
+
+  # Home Assistant MCP Server - Smart home control
+  - hostname: homeassistant.yourdomain.com
+    service: http://mcp-homeassistant:3000
+
+  # Notion MCP Server - Workspace and database management
+  - hostname: notion.yourdomain.com
+    service: http://mcp-notion:3000
+
+  # Slack MCP Server - Team messaging
+  - hostname: slack.yourdomain.com
+    service: http://mcp-slack:3000
 
   # Catch-all
   - service: http_status:404
