@@ -18,39 +18,20 @@ services:
     restart: unless-stopped
 
   # ============================================================================
-  # GitHub MCP Server - Git operations and GitHub integration
-  # Uses official @modelcontextprotocol/server-github
+  # GitHub MCP Server - Repository, issue, and PR management
+  # Custom built MCP server in /mcp/github
   # ============================================================================
   mcp-github:
-    image: mcp/server-github:latest
+    build:
+      context: ../mcp/github
+      dockerfile: Dockerfile
     container_name: mcp-github
     ports:
       - "3001:3000"
     environment:
-      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
       - MCP_TRANSPORT=http
       - PORT=3000
-    networks:
-      - mcp_network
-    restart: unless-stopped
-    # Note: If this image doesn't exist, we'll create a simple custom one
-
-  # ============================================================================
-  # Filesystem MCP Server - Access files and directories
-  # Uses official @modelcontextprotocol/server-filesystem
-  # ============================================================================
-  mcp-filesystem:
-    image: mcp/server-filesystem:latest
-    container_name: mcp-filesystem
-    ports:
-      - "3002:3000"
-    environment:
-      - ALLOWED_DIRECTORIES=/data,/workspace
-      - MCP_TRANSPORT=http
-      - PORT=3000
-    volumes:
-      - ./data:/data
-      - ./workspace:/workspace
     networks:
       - mcp_network
     restart: unless-stopped
@@ -94,6 +75,64 @@ services:
       - "3005:3000"
     environment:
       - TODOIST_API_TOKEN=${TODOIST_API_TOKEN}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Home Assistant MCP Server - Smart home control
+  # Custom built MCP server in /mcp/homeassistant
+  # ============================================================================
+  mcp-homeassistant:
+    build:
+      context: ../mcp/homeassistant
+      dockerfile: Dockerfile
+    container_name: mcp-homeassistant
+    ports:
+      - "3006:3000"
+    environment:
+      - HA_URL=${HA_URL}
+      - HA_TOKEN=${HA_TOKEN}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Notion MCP Server - Workspace, database, and page management
+  # Custom built MCP server in /mcp/notion
+  # ============================================================================
+  mcp-notion:
+    build:
+      context: ../mcp/notion
+      dockerfile: Dockerfile
+    container_name: mcp-notion
+    ports:
+      - "3007:3000"
+    environment:
+      - NOTION_TOKEN=${NOTION_TOKEN}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Slack MCP Server - Team communication and messaging
+  # Custom built MCP server in /mcp/slack
+  # ============================================================================
+  mcp-slack:
+    build:
+      context: ../mcp/slack
+      dockerfile: Dockerfile
+    container_name: mcp-slack
+    ports:
+      - "3008:3000"
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - MCP_TRANSPORT=http
       - PORT=3000
     networks:
