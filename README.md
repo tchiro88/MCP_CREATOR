@@ -1,32 +1,170 @@
 # MCP_CREATOR
 
-This commit adds complete documentation for setting up self-hosted MCP (Model Context Protocol) connector infrastructure, similar to Zapier and other integration platforms.
+**Self-hosted MCP (Model Context Protocol) connector infrastructure** - Access Gmail, GitHub, Todoist, Slack, Notion, Home Assistant, and iCloud from Claude on any device (iPhone, laptop, desktop).
 
-Key components:
+## 🚀 Quick Start
 
-    Comprehensive MCP protocol overview and latest specification (2025-06-18)
-    Self-hosted architecture design using Cloudflare Tunnel
-    Detailed Cloudflare Tunnel setup guide with Zero Trust integration
-    n8n workflow automation integration patterns and examples
-    OAuth 2.1 security implementation guide
-    Production-ready Docker Compose deployment
-    Working example MCP server implementation
-    Step-by-step quickstart guide
+Choose your path:
 
-Features:
-✓ No port forwarding required (Cloudflare Tunnel)
-✓ Multi-layer security (Zero Trust + OAuth 2.1)
-✓ n8n integration for workflow automation
-✓ Example configurations and scripts
-✓ Complete documentation with architecture diagrams ✓ Production deployment ready
+| I want to... | Guide | Time |
+|-------------|-------|------|
+| **Deploy everything on Proxmox with all 7 connectors** | [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md) | 1-2 hours |
+| **Quick minimal setup (2-3 connectors)** | [QUICKSTART-MINIMAL.md](QUICKSTART-MINIMAL.md) | 30-45 min |
+| **Get API credentials for all services** | [CREDENTIALS-GUIDE.md](CREDENTIALS-GUIDE.md) | Reference |
 
-Documentation structure:
+## 📦 What's Included
 
-    README.md: Overview and getting started
-    research/: MCP protocol specs and OAuth security
-    architecture/: Self-hosted design and integration patterns
-    deployment/: Docker Compose and Cloudflare configs
-    examples/: Working MCP server implementation
-    guides/: Quickstart and deployment tutorials
+### 7 Production-Ready MCP Connectors
 
-All sensitive files (.env, credentials) are gitignored for security.
+| Connector | Services | Status | Documentation |
+|-----------|----------|--------|---------------|
+| **GitHub** | Repos, Issues, PRs, Actions | ✅ Ready | [mcp/github/README.md](mcp/github/README.md) |
+| **Google** | Gmail, Drive, Calendar, Photos | ✅ Ready | [mcp/google/README.md](mcp/google/README.md) |
+| **Todoist** | Tasks, Projects, Labels | ✅ Ready | [mcp/todoist/README.md](mcp/todoist/README.md) |
+| **Home Assistant** | Smart Home Control | ✅ Ready | [mcp/homeassistant/README.md](mcp/homeassistant/README.md) |
+| **Notion** | Databases, Pages, Blocks | ✅ Ready | [mcp/notion/README.md](mcp/notion/README.md) |
+| **Slack** | Messages, Channels, Files | ✅ Ready | [mcp/slack/README.md](mcp/slack/README.md) |
+| **iCloud** | Mail, Calendar, Contacts, Drive | ✅ Ready | [mcp/icloud/README.md](mcp/icloud/README.md) |
+
+### Key Features
+
+✅ **Remote Access** - Use from iPhone, laptop, any device with Claude
+✅ **Secure** - No port forwarding needed (Cloudflare Tunnel)
+✅ **Self-Hosted** - Full control, runs on Proxmox/VPS/home server
+✅ **Zero Trust** - Optional Cloudflare authentication layer
+✅ **Docker-Based** - Easy deployment and updates
+✅ **Production-Ready** - Complete with monitoring and logging
+
+## 📖 Documentation
+
+### Getting Started
+- **[DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md)** - Complete deployment guide with Proxmox LXC setup, includes detailed SSH credential copying instructions
+- **[QUICKSTART-MINIMAL.md](QUICKSTART-MINIMAL.md)** - Fast minimal setup for 2-3 connectors
+- **[CREDENTIALS-GUIDE.md](CREDENTIALS-GUIDE.md)** - How to obtain credentials for all 7 services
+
+### Architecture & Research
+- **[architecture/self-hosted-architecture.md](architecture/self-hosted-architecture.md)** - System design and architecture
+- **[architecture/cloudflare-tunnel-setup.md](architecture/cloudflare-tunnel-setup.md)** - Cloudflare Tunnel configuration
+- **[research/mcp-protocol-overview.md](research/mcp-protocol-overview.md)** - MCP protocol specification
+- **[research/security-oauth.md](research/security-oauth.md)** - OAuth 2.1 security implementation
+
+### Deployment Resources
+- **[deployment/DEPLOYMENT-COMPLETE.md](deployment/DEPLOYMENT-COMPLETE.md)** - Production deployment reference
+- **[deployment/PROXMOX-SETUP.md](deployment/PROXMOX-SETUP.md)** - Proxmox-specific configuration
+
+## 🎯 Architecture Overview
+
+```
+┌─────────────────┐
+│  Your Devices   │  ← iPhone, Laptop, Desktop
+│ (Claude Apps)   │
+└────────┬────────┘
+         │ HTTPS
+         ▼
+┌─────────────────┐
+│  Cloudflare     │  ← Zero Trust + Tunnel
+│  Edge Network   │
+└────────┬────────┘
+         │ Encrypted Tunnel
+         ▼
+┌─────────────────┐
+│ Proxmox Server  │
+│   (LXC/Docker)  │  ← Your self-hosted infrastructure
+│                 │
+│  7 MCP Servers  │  ← GitHub, Google, Todoist, etc.
+└─────────────────┘
+```
+
+## 🔧 What You Need
+
+**Hardware:**
+- Proxmox server, VPS, or any Linux machine with Docker
+- 4GB RAM minimum (2GB for minimal setup)
+- 20GB disk space
+
+**Services:**
+- Domain name (pointed to Cloudflare)
+- Cloudflare account (free tier works)
+- API credentials for services you want to use
+
+**Total Cost:** ~$10-15/year (just domain if self-hosting)
+
+## 📱 Use Cases
+
+Once deployed, ask Claude to:
+
+**Gmail:**
+- "Check my unread emails"
+- "Search for emails from john@example.com about the project"
+- "Send an email to..."
+
+**GitHub:**
+- "List my repositories"
+- "Create an issue in my-repo"
+- "Show open PRs"
+
+**Todoist:**
+- "What tasks are due today?"
+- "Create a new task: Deploy MCP servers"
+- "Complete the task 'Setup credentials'"
+
+**Home Assistant:**
+- "Turn on the living room lights"
+- "What's the temperature in the bedroom?"
+- "Set thermostat to 72 degrees"
+
+**Notion:**
+- "List my databases"
+- "Create a new page in my Notes database"
+- "Query my Tasks database"
+
+**Slack:**
+- "Show recent messages in #general"
+- "Send a message to #team"
+- "Search for 'deployment' in Slack"
+
+**iCloud:**
+- "Check my iCloud calendar for today"
+- "List my iCloud reminders"
+- "Show my iCloud contacts"
+
+## 🛡️ Security
+
+All credentials are:
+- ✅ Gitignored (never committed)
+- ✅ Encrypted in transit (Cloudflare Tunnel)
+- ✅ Restricted permissions (chmod 600)
+- ✅ Optional Zero Trust authentication
+
+See [DEPLOYMENT-GUIDE.md - Security Setup](DEPLOYMENT-GUIDE.md#security-setup)
+
+## 🤝 Contributing
+
+Contributions welcome! To add a new MCP connector:
+
+1. Create `mcp/yourservice/` directory
+2. Implement using MCP SDK
+3. Add to `docker-compose.minimal.yml`
+4. Document in `mcp/yourservice/README.md`
+5. Submit PR
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) for details
+
+## 🙏 Acknowledgments
+
+Built with:
+- [Model Context Protocol (MCP)](https://modelcontextprotocol.io) by Anthropic
+- [Cloudflare Tunnel](https://www.cloudflare.com/products/tunnel/)
+- Docker & Docker Compose
+- Python 3.11+
+
+---
+
+**Need Help?**
+- 📖 Start with [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md)
+- 🔑 Credential issues? See [CREDENTIALS-GUIDE.md](CREDENTIALS-GUIDE.md)
+- 🐛 Found a bug? [Open an issue](https://github.com/tchiro88/MCP_CREATOR/issues)
+
+**Last Updated:** 2025-11-09
