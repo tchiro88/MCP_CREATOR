@@ -2,12 +2,15 @@
 
 **Goal**: Get basic MCP connectors running that you can access from any device (iPhone, laptop, etc.) with minimal complexity.
 
+> 📖 **For complete deployment on Proxmox with all 7 connectors**, see [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md)
+
 ## What You Get
 
 - ✅ **GitHub MCP** - Git operations, repo management
-- ✅ **Filesystem MCP** - File access
+- ✅ **Google MCP** - Gmail, Drive, Calendar
+- ✅ **Todoist MCP** - Task management
 - ✅ **Remote access** - Works from iPhone, laptop, anywhere
-- ✅ **Secure** - No port forwarding needed
+- ✅ **Secure** - No port forwarding needed with Cloudflare Tunnel
 - ❌ **NO n8n** - Too complex for basic needs
 - ❌ **NO databases** - Not needed
 - ❌ **NO extra services** - Just the essentials
@@ -15,8 +18,8 @@
 ## Prerequisites
 
 1. A domain name (or subdomain) pointed to Cloudflare
-2. A server to run Docker (home server, VPS, etc.)
-3. GitHub account (for GitHub MCP)
+2. A server to run Docker (home server, VPS, Proxmox LXC, etc.)
+3. Credentials for services you want to connect (see [CREDENTIALS-GUIDE.md](CREDENTIALS-GUIDE.md))
 
 ## Setup (15 minutes)
 
@@ -60,7 +63,7 @@ cloudflared tunnel token mcp-tunnel
 ### Step 4: Configure Environment
 
 ```bash
-cd MCP-connectors/deployment
+cd MCP_CREATOR/deployment
 
 # Copy example env file
 cp .env.minimal.example .env
@@ -69,11 +72,21 @@ cp .env.minimal.example .env
 nano .env
 ```
 
-Add:
+Add your credentials (see [CREDENTIALS-GUIDE.md](CREDENTIALS-GUIDE.md) for how to obtain these):
 ```bash
-CLOUDFLARE_TUNNEL_TOKEN=eyJh...your-token-here
+CLOUDFLARE_TUNNEL_TOKEN=eyJh...your-tunnel-token
 GITHUB_TOKEN=ghp_your-github-token
+TODOIST_API_TOKEN=your-todoist-token
+# Add others as needed
 ```
+
+**For Google services**, you'll also need OAuth credentials:
+```bash
+# See CREDENTIALS-GUIDE.md for detailed instructions
+# You need: credentials.json and token.json in deployment/credentials/google/
+```
+
+**📋 Copying credentials from your laptop to server?** See [Step 3 in DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md#step-3-copy-credentials-from-laptop-to-proxmox)
 
 ### Step 5: Start Services
 
@@ -144,46 +157,28 @@ Edit: `~/.config/claude-code/config.json`
 }
 ```
 
-## What About Gmail and Google Drive?
+## Google Services (Gmail, Drive, Calendar)
 
-**Problem**: There aren't many ready-made MCP servers for these yet.
+**Good news!** This repository includes a complete Google MCP connector.
 
-**Options**:
+**Setup requires OAuth authentication** (one-time setup on your laptop):
 
-### Option 1: Wait for Community Servers
-Check these regularly:
-- https://github.com/topics/mcp-server
-- https://www.npmjs.com/search?q=mcp%20server
+```bash
+# On your laptop
+cd mcp/google
+pip install -r requirements.txt
 
-### Option 2: Use Google Apps Script + Webhook MCP
-Create Google Apps Script that exposes Gmail/Drive via webhooks, then create simple MCP server that calls those webhooks.
+# Copy your Google OAuth credentials.json here
+# (See CREDENTIALS-GUIDE.md for how to get this)
 
-### Option 3: Build Your Own (Simple!)
-Use the example in `examples/simple-mcp-server/` as a template:
+# Authenticate (opens browser)
+python server.py
 
-```javascript
-// Simple Gmail MCP server skeleton
-server.setRequestHandler('tools/list', async () => ({
-  tools: [{
-    name: 'search_gmail',
-    description: 'Search Gmail messages',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string' }
-      }
-    }
-  }]
-}));
-
-server.setRequestHandler('tools/call', async (request) => {
-  if (request.params.name === 'search_gmail') {
-    // Use Gmail API here
-    const results = await searchGmail(request.params.arguments.query);
-    return { content: [{ type: 'text', text: JSON.stringify(results) }] };
-  }
-});
+# This creates token.json
+# Copy both files to your server
 ```
+
+**See detailed instructions**: [CREDENTIALS-GUIDE.md - Google Services](CREDENTIALS-GUIDE.md#google-services-gmail-drive-calendar)
 
 ## Security (Optional but Recommended)
 
@@ -219,19 +214,37 @@ curl http://localhost:3001/health
 ## Next Steps
 
 Once this is working, you can:
-1. Add more MCP servers as they become available
-2. Build custom MCP servers for your specific needs
-3. Add Zero Trust authentication
-4. Set up monitoring
+1. **Add more connectors** - This repository includes 7 ready-to-use connectors
+2. **Add Zero Trust authentication** - Secure your endpoints (see DEPLOYMENT-GUIDE.md)
+3. **Deploy on Proxmox** - See [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md) for complete Proxmox LXC setup
+4. **Build custom MCP servers** - Use `examples/simple-mcp-server/` as a template
+
+## Available Connectors in This Repository
+
+| Connector | What It Does | Documentation |
+|-----------|--------------|---------------|
+| GitHub | Repos, issues, PRs | [mcp/github/README.md](mcp/github/README.md) |
+| Google | Gmail, Drive, Calendar, Photos | [mcp/google/README.md](mcp/google/README.md) |
+| Todoist | Task management | [mcp/todoist/README.md](mcp/todoist/README.md) |
+| Home Assistant | Smart home control | [mcp/homeassistant/README.md](mcp/homeassistant/README.md) |
+| Notion | Databases, pages | [mcp/notion/README.md](mcp/notion/README.md) |
+| Slack | Messages, channels | [mcp/slack/README.md](mcp/slack/README.md) |
+| iCloud | Mail, calendar, contacts | [mcp/icloud/README.md](mcp/icloud/README.md) |
 
 ## Cost
 
 - **Cloudflare Tunnel**: Free
-- **Server**: $0 (home server) or $5-10/month (VPS)
+- **Server**: $0 (home server/Proxmox) or $5-10/month (VPS)
 - **Domain**: $10-15/year
 
 Total: **~$10-15/year** (just the domain if using home server)
 
 ---
+
+## More Resources
+
+- 📖 **Complete Deployment**: [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md) - Full Proxmox deployment with all connectors
+- 🔑 **Get Credentials**: [CREDENTIALS-GUIDE.md](CREDENTIALS-GUIDE.md) - How to obtain all API keys and tokens
+- 📋 **Individual Connectors**: See `mcp/*/README.md` for each connector
 
 **That's it!** No n8n, no complexity, just simple remote MCP access.
