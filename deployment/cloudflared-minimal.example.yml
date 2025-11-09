@@ -29,5 +29,9 @@ ingress:
   - hostname: slack.yourdomain.com
     service: http://mcp-slack:3000
 
+  # iCloud MCP Server - Apple ecosystem (Mail, Calendar, Reminders, Drive)
+  - hostname: icloud.yourdomain.com
+    service: http://mcp-icloud:3000
+
   # Catch-all
   - service: http_status:404
