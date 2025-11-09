@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  hydraulic-mcp-server:
+    build: .
+    container_name: hydraulic-mcp-server
+    stdin_open: true
+    tty: true
+    environment:
+      # API Keys (provide via .env file or environment)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+
+      # Database configuration
+      - DB_TYPE=${DB_TYPE:-sqlite}
+
+      # PostgreSQL configuration (if using)
+      - POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-sparkplug_system}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+
+      # Analysis configuration
+      - WATCH_SCHEMATICS=${WATCH_SCHEMATICS:-true}
+      - WATCH_INTERVAL=${WATCH_INTERVAL:-5}
+
+    volumes:
+      # Mount directories for persistent data
+      - ./schematics:/app/schematics
+      - ./manufacturer_docs:/app/manufacturer_docs
+      - ./machines:/app/machines
+      - ./database:/app/database
+
+    # For MCP, we use stdio, so no ports needed
+    # If you want to add HTTP API later, uncomment:
+    # ports:
+    #   - "8000:8000"
+
+    restart: unless-stopped
+
+  # Optional: PostgreSQL database (if using instead of SQLite)
+  # postgres:
+  #   image: postgres:15
+  #   container_name: hydraulic-postgres
+  #   environment:
+  #     - POSTGRES_DB=sparkplug_system
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=your_password_here
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+
+# volumes:
+#   postgres_data:

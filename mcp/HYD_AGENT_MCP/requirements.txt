@@ -1,0 +1,18 @@
+## Hydraulic Analysis MCP Server Dependencies
+
+# MCP SDK
+mcp>=0.9.0
+
+# AI/ML
+openai>=1.0.0
+
+# PDF Processing
+PyPDF2>=3.0.0
+
+# Database
+# No additional packages needed for SQLite (built-in)
+# For PostgreSQL support (optional):
+# psycopg2-binary>=2.9.0
+
+# Utilities
+python-dotenv>=1.0.0

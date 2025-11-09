@@ -11,10 +11,14 @@
             "id": "4b0acfa4b629c7f6",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "guides/quickstart.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "quickstart"
             }
           }
         ]
@@ -90,6 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "guides/quickstart.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -99,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks"
+              "title": "Backlinks for quickstart"
             }
           },
           {
@@ -108,11 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "guides/quickstart.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links"
+              "title": "Outgoing links from quickstart"
             }
           },
           {
@@ -136,12 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "guides/quickstart.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline"
+              "title": "Outline of quickstart"
             }
           }
         ]
@@ -164,41 +171,41 @@
   },
   "active": "4b0acfa4b629c7f6",
   "lastOpenFiles": [
-    "mcp_server_template.py",
-    "simple-mcp-server/server.js",
-    "simple-mcp-server/package.json",
+    "mcp/HYD_AGENT_MCP/server.py",
+    "mcp/HYD_AGENT_MCP/schematics",
+    "mcp/HYD_AGENT_MCP/schematic_parser.py",
+    "mcp/HYD_AGENT_MCP/requirements.txt",
+    "mcp/HYD_AGENT_MCP/quickstart.sh",
+    "mcp/HYD_AGENT_MCP/manufacturer_docs",
+    "mcp/HYD_AGENT_MCP/machines",
+    "mcp/HYD_AGENT_MCP/flow_analyzer.py",
+    "mcp/HYD_AGENT_MCP/docker-compose.yml",
+    "mcp/HYD_AGENT_MCP/doc_manager.py",
+    "mcp/HYD_AGENT_MCP/database_interface.py",
+    "mcp/HYD_AGENT_MCP/USAGE.md",
+    "mcp/HYD_AGENT_MCP/SETUP.md",
+    "mcp/HYD_AGENT_MCP/README.md",
+    "mcp/HYD_AGENT_MCP/PROJECT_SUMMARY.md",
+    "mcp/slack/README.md",
+    "mcp/notion/README.md",
+    "mcp/homeassistant/README.md",
+    "mcp/github/README.md",
+    "PRODUCTION-READY.md",
+    "mcp/google/venv/lib/python3.13/site-packages/httpx-0.28.1.dist-info/licenses/LICENSE.md",
+    "mcp/google/venv/lib/python3.13/site-packages/starlette-0.50.0.dist-info/licenses/LICENSE.md",
+    "mcp/google/venv/lib/python3.13/site-packages/httpcore-1.0.9.dist-info/licenses/LICENSE.md",
+    "mcp/google/venv/lib/python3.13/site-packages/uvicorn-0.38.0.dist-info/licenses/LICENSE.md",
+    "mcp/google/venv/lib/python3.13/site-packages/idna-3.11.dist-info/licenses/LICENSE.md",
+    "mcp/todoist/README.md",
+    "mcp/google/README.md",
+    "CREDENTIALS-GUIDE.md",
     "simple-mcp-server/README.md",
-    "simple-mcp-server/Dockerfile",
-    "simple-mcp-server",
     "docs/research/security-oauth.md",
     "docs/research/mcp-protocol-overview.md",
     "docs/guides/quickstart.md",
     "docs/architecture/self-hosted-architecture.md",
     "docs/architecture/n8n-integration.md",
     "docs/architecture/cloudflare-tunnel-setup.md",
-    "docs/research",
-    "docs/guides",
-    "docs/architecture",
-    "docs/README.md",
-    "docs",
-    "MCP/docs/research/security-oauth.md",
-    "MCP/docs/research/mcp-protocol-overview.md",
-    "MCP/docs/guides/quickstart.md",
-    "MCP/docs/architecture/self-hosted-architecture.md",
-    "MCP/docs/architecture/n8n-integration.md",
-    "MCP/docs/architecture/cloudflare-tunnel-setup.md",
-    "MCP/simple-mcp-server/server.js",
-    "MCP/simple-mcp-server/package.json",
-    "MCP/simple-mcp-server/README.md",
-    "MCP/docs/README.md",
-    "QUICKSTART-MINIMAL.md",
-    "MCP-connectors/examples/simple-mcp-server/README.md",
-    "MCP-connectors/research/security-oauth.md",
-    "MCP-connectors/research/mcp-protocol-overview.md",
-    "MCP-connectors/guides/quickstart.md",
-    "MCP-connectors/architecture/self-hosted-architecture.md",
-    "MCP-connectors/architecture/n8n-integration.md",
-    "MCP-connectors/architecture/cloudflare-tunnel-setup.md",
-    "MCP-connectors/README.md"
+    "docs/README.md"
   ]
 }

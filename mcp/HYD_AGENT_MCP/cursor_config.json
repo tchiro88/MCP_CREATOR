@@ -1,0 +1,21 @@
+{
+  "mcp": {
+    "servers": {
+      "hydraulic-analysis": {
+        "command": "docker",
+        "args": [
+          "run",
+          "-i",
+          "--rm",
+          "-v", "${workspaceFolder}/HYD_AGENT_MCP/schematics:/app/schematics",
+          "-v", "${workspaceFolder}/HYD_AGENT_MCP/manufacturer_docs:/app/manufacturer_docs",
+          "-v", "${workspaceFolder}/HYD_AGENT_MCP/machines:/app/machines",
+          "-v", "${workspaceFolder}/HYD_AGENT_MCP/database:/app/database",
+          "-e", "OPENAI_API_KEY=${env:OPENAI_API_KEY}",
+          "-e", "OPENROUTER_API_KEY=${env:OPENROUTER_API_KEY}",
+          "hydraulic-mcp-server"
+        ]
+      }
+    }
+  }
+}

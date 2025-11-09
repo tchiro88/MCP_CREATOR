@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "hydraulic-analysis": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-v", "${PWD}/schematics:/app/schematics",
+        "-v", "${PWD}/manufacturer_docs:/app/manufacturer_docs",
+        "-v", "${PWD}/machines:/app/machines",
+        "-v", "${PWD}/database:/app/database",
+        "-e", "OPENAI_API_KEY=${OPENAI_API_KEY}",
+        "-e", "OPENROUTER_API_KEY=${OPENROUTER_API_KEY}",
+        "hydraulic-mcp-server"
+      ]
+    }
+  }
+}
