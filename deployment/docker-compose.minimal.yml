@@ -139,6 +139,26 @@ services:
       - mcp_network
     restart: unless-stopped
 
+  # ============================================================================
+  # iCloud MCP Server - Apple ecosystem (Mail, Calendar, Reminders, Drive)
+  # Custom built MCP server in /mcp/icloud
+  # ============================================================================
+  mcp-icloud:
+    build:
+      context: ../mcp/icloud
+      dockerfile: Dockerfile
+    container_name: mcp-icloud
+    ports:
+      - "3009:3000"
+    environment:
+      - ICLOUD_USERNAME=${ICLOUD_USERNAME}
+      - ICLOUD_PASSWORD=${ICLOUD_PASSWORD}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
 networks:
   mcp_network:
     driver: bridge
