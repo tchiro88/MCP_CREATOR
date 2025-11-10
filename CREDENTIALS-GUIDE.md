@@ -333,6 +333,51 @@ pct push 200 /tmp/credentials /opt/MCP_CREATOR/deployment/credentials -r
 
 ---
 
+## Outlook (Office 365)
+
+### What You Need
+- Outlook/Office 365 account
+- **App-specific password** (NOT regular password!)
+- IMAP enabled
+
+### Step-by-Step
+
+1. **Enable IMAP in Outlook**
+   - Go to: Outlook settings (web)
+   - Navigate to: **Mail** → **Sync email** → **POP and IMAP**
+   - Enable: **IMAP**
+   - Save changes
+
+2. **Generate App-Specific Password**
+   - Go to: https://account.microsoft.com/security
+   - Navigate to: **Security** → **Advanced security options**
+   - Click: **App passwords**
+   - Create new: "MCP Server"
+   - Copy password immediately (shown only once!)
+   - Format: `xxxx-xxxx-xxxx-xxxx`
+
+3. **Add to .env File**
+   ```bash
+   OUTLOOK_EMAIL=your-email@outlook.com
+   OUTLOOK_PASSWORD=xxxx-xxxx-xxxx-xxxx
+   ```
+
+**Security**:
+- **NEVER use regular account password** - only app-specific!
+- App-specific passwords are for third-party apps only
+- Can revoke from account security settings anytime
+- Read-only connector - cannot send emails or modify calendar
+- Token doesn't expire unless manually revoked
+
+**Features:**
+- Read-only email access via IMAP
+- Calendar access via Exchange Web Services
+- Smart priority list generator
+- Daily briefing tool
+- Workload analysis
+
+---
+
 ## Cloudflare Tunnel
 
 ### What You Need
@@ -391,7 +436,7 @@ pct push 200 /tmp/credentials /opt/MCP_CREATOR/deployment/credentials -r
 
 ---
 
-## Quick Reference - All 7 Connectors
+## Quick Reference - All 8 Connectors
 
 | Service | Credential Type | Where to Get | Env Variable |
 |---------|----------------|--------------|--------------|
@@ -402,6 +447,7 @@ pct push 200 /tmp/credentials /opt/MCP_CREATOR/deployment/credentials -r
 | Notion | Integration Token | notion.so/my-integrations | `NOTION_TOKEN` |
 | Slack | Bot OAuth Token | api.slack.com/apps | `SLACK_BOT_TOKEN` |
 | iCloud | App-Specific Password | appleid.apple.com | `ICLOUD_USERNAME`, `ICLOUD_PASSWORD` |
+| **Outlook** | App-Specific Password | account.microsoft.com/security | `OUTLOOK_EMAIL`, `OUTLOOK_PASSWORD` |
 | Cloudflare | Tunnel Token | `cloudflared tunnel token` | `CLOUDFLARE_TUNNEL_TOKEN` |
 
 ---
