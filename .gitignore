@@ -46,8 +46,10 @@ docker-compose.override.yml
 
 # Credentials and secrets
 credentials/
+deployment/credentials/
 *.pem
 *.key
 *.crt
 *_secret_*
 *-secret-*
+*.json.backup

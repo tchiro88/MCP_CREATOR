@@ -1,0 +1,184 @@
+# Autosapien.ai MCP Infrastructure
+# Custom deployment for: Google, iCloud, Outlook, Todoist, Home Assistant, Integrator
+# Domain: autosapien.ai
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Google Services MCP Server - Gmail, Drive, Calendar
+  # Port: 3004 | Route: google.autosapien.ai
+  # ============================================================================
+  mcp-google:
+    build:
+      context: ../mcp/google
+      dockerfile: Dockerfile
+    container_name: mcp-google
+    ports:
+      - "3004:3000"
+    environment:
+      - GOOGLE_TOKEN_FILE=/app/credentials/token.json
+      - GOOGLE_CREDENTIALS_FILE=/app/credentials/credentials.json
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    volumes:
+      - ./credentials/google:/app/credentials:ro
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # iCloud MCP Server - Mail, Calendar, Contacts, Drive
+  # Port: 3009 | Route: icloud.autosapien.ai
+  # ============================================================================
+  mcp-icloud:
+    build:
+      context: ../mcp/icloud
+      dockerfile: Dockerfile
+    container_name: mcp-icloud
+    ports:
+      - "3009:3000"
+    environment:
+      - ICLOUD_USERNAME=${ICLOUD_USERNAME}
+      - ICLOUD_PASSWORD=${ICLOUD_PASSWORD}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Outlook MCP Server - Email, Calendar (READ-ONLY)
+  # Port: 3010 | Route: outlook.autosapien.ai
+  # ============================================================================
+  mcp-outlook:
+    build:
+      context: ../mcp/outlook
+      dockerfile: Dockerfile
+    container_name: mcp-outlook
+    ports:
+      - "3010:3000"
+    environment:
+      - OUTLOOK_EMAIL=${OUTLOOK_EMAIL}
+      - OUTLOOK_PASSWORD=${OUTLOOK_PASSWORD}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Todoist MCP Server - Task Management
+  # Port: 3005 | Route: todoist.autosapien.ai
+  # ============================================================================
+  mcp-todoist:
+    build:
+      context: ../mcp/todoist
+      dockerfile: Dockerfile
+    container_name: mcp-todoist
+    ports:
+      - "3005:3000"
+    environment:
+      - TODOIST_API_TOKEN=${TODOIST_API_TOKEN}
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Home Assistant MCP Server - Smart Home Control (DISABLED)
+  # Port: 3006 | Route: homeassistant.autosapien.ai
+  # Will be enabled later after verifying inter-VLAN routing
+  # ============================================================================
+  # mcp-homeassistant:
+  #   build:
+  #     context: ../mcp/homeassistant
+  #     dockerfile: Dockerfile
+  #   container_name: mcp-homeassistant
+  #   ports:
+  #     - "3006:3000"
+  #   environment:
+  #     - HA_URL=${HA_URL}
+  #     - HA_TOKEN=${HA_TOKEN}
+  #     - MCP_TRANSPORT=http
+  #     - PORT=3000
+  #   networks:
+  #     - mcp_network
+  #   restart: unless-stopped
+
+  # ============================================================================
+  # Integrator MCP Server - Cross-Service Orchestration
+  # Port: 3011 | Route: integrator.autosapien.ai
+  # Unifies: All email, calendar, task services into single interface
+  # ============================================================================
+  mcp-integrator:
+    build:
+      context: ../mcp/integrator
+      dockerfile: Dockerfile
+    container_name: mcp-integrator
+    ports:
+      - "3011:3000"
+    environment:
+      # Service endpoints - internal Docker network
+      - GOOGLE_MCP_URL=http://mcp-google:3000
+      - ICLOUD_MCP_URL=http://mcp-icloud:3000
+      - OUTLOOK_MCP_URL=http://mcp-outlook:3000
+      - TODOIST_MCP_URL=http://mcp-todoist:3000
+      # - HOMEASSISTANT_MCP_URL=http://mcp-homeassistant:3000  # Disabled for now
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    depends_on:
+      - mcp-google
+      - mcp-icloud
+      - mcp-outlook
+      - mcp-todoist
+      # - mcp-homeassistant  # Disabled for now
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # HYD_AGENT_MCP - Hydraulic Schematic Analysis (ENABLED)
+  # Port: 3012 | Route: hydraulic.autosapien.ai
+  # AI-powered hydraulic schematic analysis and flow path optimization
+  # ============================================================================
+  mcp-hydraulic:
+    build:
+      context: ../mcp/HYD_AGENT_MCP
+      dockerfile: Dockerfile
+    container_name: mcp-hydraulic
+    ports:
+      - "3012:3000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DB_TYPE=sqlite
+      - WATCH_SCHEMATICS=true
+      - MCP_TRANSPORT=http
+      - PORT=3000
+    volumes:
+      - ../mcp/HYD_AGENT_MCP/schematics:/app/schematics
+      - ../mcp/HYD_AGENT_MCP/manufacturer_docs:/app/manufacturer_docs
+      - ../mcp/HYD_AGENT_MCP/machines:/app/machines
+      - ../mcp/HYD_AGENT_MCP/database:/app/database
+    networks:
+      - mcp_network
+    restart: unless-stopped
+
+networks:
+  mcp_network:
+    driver: bridge
+    name: mcp_network
+
+# ============================================================================
+# Port Mapping Summary
+# ============================================================================
+# Service          | LXC Port | Cloudflare Route
+# ---------------- | -------- | --------------------------------
+# Google           | 3004     | google.autosapien.ai
+# Todoist          | 3005     | todoist.autosapien.ai
+# Home Assistant   | 3006     | homeassistant.autosapien.ai
+# iCloud           | 3009     | icloud.autosapien.ai
+# Outlook          | 3010     | outlook.autosapien.ai
+# Integrator       | 3011     | integrator.autosapien.ai
+# Hydraulic (opt)  | 3012     | hydraulic.autosapien.ai
