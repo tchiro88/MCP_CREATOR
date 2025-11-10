@@ -8,13 +8,13 @@ Choose your path:
 
 | I want to... | Guide | Time |
 |-------------|-------|------|
-| **Deploy everything on Proxmox with all 7 connectors** | [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md) | 1-2 hours |
+| **Deploy everything on Proxmox with all 8 connectors** | [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md) | 1-2 hours |
 | **Quick minimal setup (2-3 connectors)** | [QUICKSTART-MINIMAL.md](QUICKSTART-MINIMAL.md) | 30-45 min |
 | **Get API credentials for all services** | [CREDENTIALS-GUIDE.md](CREDENTIALS-GUIDE.md) | Reference |
 
 ## 📦 What's Included
 
-### 7 Production-Ready MCP Connectors
+### 8 Production-Ready MCP Connectors + Cross-Service Integrator
 
 | Connector | Services | Status | Documentation |
 |-----------|----------|--------|---------------|
@@ -25,6 +25,8 @@ Choose your path:
 | **Notion** | Databases, Pages, Blocks | ✅ Ready | [mcp/notion/README.md](mcp/notion/README.md) |
 | **Slack** | Messages, Channels, Files | ✅ Ready | [mcp/slack/README.md](mcp/slack/README.md) |
 | **iCloud** | Mail, Calendar, Contacts, Drive | ✅ Ready | [mcp/icloud/README.md](mcp/icloud/README.md) |
+| **Outlook** | Email, Calendar (Read-Only) + Priority AI | ✅ Ready | [mcp/outlook/README.md](mcp/outlook/README.md) |
+| **Integrator** | Cross-Service Intelligence (Meta-MCP) | ✅ Ready | [mcp/integrator/README.md](mcp/integrator/README.md) |
 
 ### Key Features
 
@@ -127,6 +129,18 @@ Once deployed, ask Claude to:
 - "Check my iCloud calendar for today"
 - "List my iCloud reminders"
 - "Show my iCloud contacts"
+
+**Outlook:**
+- "Check my Outlook unread emails"
+- "Build my priority action list for today"
+- "Give me my daily briefing"
+- "What's on my Outlook calendar?"
+
+**Integrator (Cross-Service):**
+- "Show me ALL my unread messages" (Outlook + Gmail + Slack)
+- "Give me a comprehensive briefing" (all services)
+- "Search everywhere for 'project alpha'"
+- "Check health of all my MCP services"
 
 ## 🛡️ Security
 

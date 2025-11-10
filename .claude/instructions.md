@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a self-hosted MCP (Model Context Protocol) connector infrastructure project with 7 production-ready connectors. The goal is to deploy these MCP servers to a Proxmox LXC container with remote access via an existing Cloudflare Tunnel.
+This is a self-hosted MCP (Model Context Protocol) connector infrastructure project with 8 production-ready connectors + 1 meta-integrator. The goal is to deploy these MCP servers to a Proxmox LXC container with remote access via an existing Cloudflare Tunnel.
 
 ## Important Context
 
@@ -11,7 +11,9 @@ This is a self-hosted MCP (Model Context Protocol) connector infrastructure proj
 - ✅ **Google OAuth credentials available** - User has `credentials.json` and `token.json` ready
 - ⏸️  **Other service credentials** - User will provide as needed (ask before proceeding)
 
-### Available MCP Connectors (7 total)
+### Available MCP Connectors (8 + 1 integrator)
+
+**Individual Service Connectors:**
 1. **GitHub** - Repos, Issues, PRs (requires: GITHUB_TOKEN)
 2. **Google** - Gmail, Drive, Calendar (requires: credentials.json + token.json) ✅ USER HAS THESE
 3. **Todoist** - Task management (requires: TODOIST_API_TOKEN)
@@ -19,6 +21,20 @@ This is a self-hosted MCP (Model Context Protocol) connector infrastructure proj
 5. **Notion** - Databases, pages (requires: NOTION_TOKEN)
 6. **Slack** - Messages, channels (requires: SLACK_BOT_TOKEN)
 7. **iCloud** - Mail, calendar, contacts (requires: ICLOUD_USERNAME + ICLOUD_PASSWORD)
+8. **Outlook** - Email, Calendar READ-ONLY (requires: OUTLOOK_EMAIL + OUTLOOK_PASSWORD) ⭐ NEW
+   - Read-only email via IMAP
+   - Calendar via EWS
+   - Smart priority list generator
+   - Daily briefing tool
+
+**Meta-Connector:**
+9. **Integrator** - Cross-service orchestration ⭐ NEW
+   - Unified inbox (all email/messaging services)
+   - Unified calendar (all calendar services)
+   - Unified tasks (all task services)
+   - Comprehensive briefing (across all services)
+   - Search everywhere (all services at once)
+   - Service health check
 
 ## Key Documentation Files
 
@@ -260,6 +276,8 @@ Would you like to:
 | Notion | 3000 | 3007 | notion.domain.com |
 | Slack | 3000 | 3008 | slack.domain.com |
 | iCloud | 3000 | 3009 | icloud.domain.com |
+| **Outlook** ⭐ | 3000 | 3010 | outlook.domain.com |
+| **Integrator** ⭐ | 3000 | 3011 | integrator.domain.com |
 
 ## Testing Checklist
 
