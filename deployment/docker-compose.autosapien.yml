@@ -22,7 +22,7 @@ services:
       - MCP_TRANSPORT=http
       - PORT=3000
     volumes:
-      - ./credentials/google:/app/credentials:ro
+      - ./credentials/google:/app/credentials
     networks:
       - mcp_network
     restart: unless-stopped

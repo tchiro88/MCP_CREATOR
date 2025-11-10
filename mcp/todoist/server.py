@@ -573,7 +573,7 @@ async def call_tool(name: str, arguments: dict) -> list[dict[str, Any]]:
 # Main Entry Point
 # ============================================================================
 
-def main():
+async def main():
     """Run the Todoist MCP server"""
     print(f"Starting {SERVER_NAME} v{SERVER_VERSION}")
     print(f"API Token: {TODOIST_API_TOKEN[:8]}..." if TODOIST_API_TOKEN else "No token")
@@ -588,11 +588,12 @@ def main():
         print("Server is ready for connections...")
 
         # Run the server
-        asyncio.run(stdio_server(app))
+        async with stdio_server() as (read_stream, write_stream):
+            await app.run(read_stream, write_stream, app.create_initialization_options())
 
     except Exception as e:
         print(f"ERROR: {e}")
         exit(1)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

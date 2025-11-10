@@ -36,7 +36,7 @@ if not ICLOUD_USERNAME or not ICLOUD_PASSWORD:
     sys.exit(1)
 
 # Initialize MCP server
-mcp = FastMCP("icloud", version="1.0.0")
+mcp = FastMCP("icloud")
 
 # Global iCloud API client
 api = None
@@ -716,7 +716,7 @@ def get_inbox_resource() -> str:
 # ============================================================================
 
 if __name__ == "__main__":
-    print(f"Starting {mcp.name} v{mcp.version}")
+    print(f"Starting {mcp.name}")
     print(f"iCloud Username: {ICLOUD_USERNAME}")
 
     # Initialize connection

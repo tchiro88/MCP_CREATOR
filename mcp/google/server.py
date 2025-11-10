@@ -48,7 +48,8 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive.file',
     'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/calendar.events',
-    'https://www.googleapis.com/auth/photoslibrary.readonly',
+    # Removed photoslibrary scope - causing OAuth errors
+    # 'https://www.googleapis.com/auth/photoslibrary.readonly',
 ]
 
 # File paths
@@ -736,7 +737,7 @@ async def call_tool(name: str, arguments: dict) -> list[dict[str, Any]]:
 # Main Entry Point
 # ============================================================================
 
-def main():
+async def main():
     """Run the Google MCP server"""
     print(f"Starting {SERVER_NAME} v{SERVER_VERSION}")
     print("Authenticating with Google...")
@@ -748,11 +749,12 @@ def main():
         print("Server is ready for connections...")
 
         # Run the server
-        asyncio.run(stdio_server(app))
+        async with stdio_server() as (read_stream, write_stream):
+            await app.run(read_stream, write_stream, app.create_initialization_options())
 
     except Exception as e:
         print(f"ERROR: {e}")
         exit(1)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
