@@ -1,361 +1,391 @@
-#!/usr/bin/env python3
 """
-Outlook MCP Server (Read-Only)
-Provides read-only access to Outlook email and calendar with smart priority analysis
+Outlook MCP Server - FastMCP HTTP server for Outlook.com automation.
+
+This server provides MCP tools for interacting with Outlook.com via
+browser automation using Playwright.
 """
 
-import os
-import sys
-import json
 import logging
-from datetime import datetime, timedelta
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
+import os
+from pathlib import Path
+from typing import Any, Dict, List
 
-from email_reader import OutlookEmailReader
-from calendar_reader import OutlookCalendarReader
-from priority_analyzer import PriorityAnalyzer
+from fastmcp import FastMCP
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+from outlook_web_client import (
+    OutlookWebClient,
+    OutlookLoginRequiredError,
+    OutlookSessionError
+)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Initialize server
-app = Server("outlook-mcp")
+# Initialize FastMCP server
+mcp = FastMCP("Outlook MCP Server")
 
-# Get credentials from environment
-OUTLOOK_EMAIL = os.getenv('OUTLOOK_EMAIL')
-OUTLOOK_PASSWORD = os.getenv('OUTLOOK_PASSWORD')
+# Configuration from environment
+SESSION_DIR = Path(os.getenv("OUTLOOK_SESSION_DIR", "/app/session"))
+HEADLESS = os.getenv("OUTLOOK_HEADLESS", "true").lower() == "true"
+TIMEOUT = int(os.getenv("OUTLOOK_TIMEOUT", "30000"))
 
-# Initialize clients (lazy loading)
-email_client = None
-calendar_client = None
-priority_analyzer = None
-
-
-def get_email_client():
-    """Get or create email client"""
-    global email_client
-    if email_client is None:
-        if not OUTLOOK_EMAIL or not OUTLOOK_PASSWORD:
-            raise Exception("OUTLOOK_EMAIL and OUTLOOK_PASSWORD environment variables required")
-        email_client = OutlookEmailReader(OUTLOOK_EMAIL, OUTLOOK_PASSWORD)
-        email_client.connect()
-    return email_client
+# Global client instance
+outlook_client: OutlookWebClient | None = None
 
 
-def get_calendar_client():
-    """Get or create calendar client"""
-    global calendar_client
-    if calendar_client is None:
-        if not OUTLOOK_EMAIL or not OUTLOOK_PASSWORD:
-            raise Exception("OUTLOOK_EMAIL and OUTLOOK_PASSWORD environment variables required")
-        calendar_client = OutlookCalendarReader(OUTLOOK_EMAIL, OUTLOOK_PASSWORD)
-        calendar_client.connect()
-    return calendar_client
+def get_client() -> OutlookWebClient:
+    """
+    Get or create the Outlook client instance.
+
+    Returns:
+        OutlookWebClient instance
+
+    Raises:
+        OutlookLoginRequiredError: If no valid session exists
+    """
+    global outlook_client
+
+    if outlook_client is None:
+        logger.info("Initializing Outlook client")
+        outlook_client = OutlookWebClient(
+            session_dir=SESSION_DIR,
+            headless=HEADLESS,
+            timeout=TIMEOUT
+        )
+
+    return outlook_client
 
 
-def get_priority_analyzer():
-    """Get or create priority analyzer"""
-    global priority_analyzer
-    if priority_analyzer is None:
-        priority_analyzer = PriorityAnalyzer(get_email_client(), get_calendar_client())
-    return priority_analyzer
+@mcp.tool()
+def session_status() -> Dict[str, Any]:
+    """
+    Check the current Outlook session status.
 
+    Returns a dictionary indicating whether a valid session exists,
+    session file location, and login status.
 
-@app.list_tools()
-async def list_tools() -> list[Tool]:
-    """List available tools"""
-    return [
-        # Email tools
-        Tool(
-            name="get_unread_emails",
-            description="Get unread emails from Outlook inbox. Returns subject, sender, date, and preview.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "limit": {
-                        "type": "number",
-                        "description": "Maximum number of emails to return (default: 50)",
-                        "default": 50
-                    }
-                }
-            }
-        ),
-        Tool(
-            name="get_recent_emails",
-            description="Get recent emails from the last N days",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "days": {
-                        "type": "number",
-                        "description": "Number of days to look back (default: 7)",
-                        "default": 7
-                    },
-                    "limit": {
-                        "type": "number",
-                        "description": "Maximum number of emails to return (default: 100)",
-                        "default": 100
-                    }
-                }
-            }
-        ),
-        Tool(
-            name="search_emails",
-            description="Search emails by keyword in subject or body",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "Search query (keyword to search for)"
-                    },
-                    "days": {
-                        "type": "number",
-                        "description": "Number of days to search back (default: 30)",
-                        "default": 30
-                    }
-                },
-                "required": ["query"]
-            }
-        ),
-        Tool(
-            name="get_email_content",
-            description="Get full content of a specific email by ID",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "email_id": {
-                        "type": "string",
-                        "description": "Email ID to retrieve"
-                    }
-                },
-                "required": ["email_id"]
-            }
-        ),
-        Tool(
-            name="count_unread",
-            description="Count total unread emails",
-            inputSchema={
-                "type": "object",
-                "properties": {}
-            }
-        ),
-
-        # Calendar tools
-        Tool(
-            name="get_today_events",
-            description="Get today's calendar events",
-            inputSchema={
-                "type": "object",
-                "properties": {}
-            }
-        ),
-        Tool(
-            name="get_week_events",
-            description="Get this week's calendar events",
-            inputSchema={
-                "type": "object",
-                "properties": {}
-            }
-        ),
-        Tool(
-            name="get_events_range",
-            description="Get calendar events in a specific date range",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "start_date": {
-                        "type": "string",
-                        "description": "Start date (YYYY-MM-DD format)"
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "description": "End date (YYYY-MM-DD format)"
-                    }
-                },
-                "required": ["start_date", "end_date"]
-            }
-        ),
-        Tool(
-            name="search_events",
-            description="Search calendar events by keyword",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "Search query (keyword in event subject)"
-                    },
-                    "days": {
-                        "type": "number",
-                        "description": "Days to search forward and backward (default: 30)",
-                        "default": 30
-                    }
-                },
-                "required": ["query"]
-            }
-        ),
-        Tool(
-            name="check_availability",
-            description="Check availability for a specific day (shows free time blocks)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "date": {
-                        "type": "string",
-                        "description": "Date to check (YYYY-MM-DD format). Default: today"
-                    }
-                }
-            }
-        ),
-
-        # Smart analysis tools
-        Tool(
-            name="generate_priority_list",
-            description="Generate smart priority action list based on unread emails and calendar. " +
-                       "Analyzes urgency, suggests time blocks, and prioritizes tasks.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "date": {
-                        "type": "string",
-                        "description": "Date to generate list for (YYYY-MM-DD format). Default: today"
-                    }
-                }
-            }
-        ),
-        Tool(
-            name="daily_briefing",
-            description="Generate morning briefing with today's priorities, meetings, and recommendations",
-            inputSchema={
-                "type": "object",
-                "properties": {}
-            }
-        ),
-        Tool(
-            name="analyze_workload",
-            description="Analyze email and meeting workload over multiple days",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "days": {
-                        "type": "number",
-                        "description": "Number of days to analyze (default: 7)",
-                        "default": 7
-                    }
-                }
-            }
-        ),
-    ]
-
-
-@app.call_tool()
-async def call_tool(name: str, arguments: dict) -> list[TextContent]:
-    """Handle tool calls"""
-
+    Returns:
+        Dictionary with session status information:
+        - logged_in: bool - Whether currently logged in
+        - session_file: str - Path to session file
+        - message: str - Status message
+    """
     try:
-        # Email tools
-        if name == "get_unread_emails":
-            limit = arguments.get("limit", 50)
-            client = get_email_client()
-            emails = client.get_unread_emails(limit=limit)
-            return [TextContent(type="text", text=json.dumps(emails, indent=2))]
+        client = get_client()
+        status = client.check_session_status()
 
-        elif name == "get_recent_emails":
-            days = arguments.get("days", 7)
-            limit = arguments.get("limit", 100)
-            client = get_email_client()
-            emails = client.get_recent_emails(days=days, limit=limit)
-            return [TextContent(type="text", text=json.dumps(emails, indent=2))]
-
-        elif name == "search_emails":
-            query = arguments["query"]
-            days = arguments.get("days", 30)
-            client = get_email_client()
-            emails = client.search_emails(query=query, days=days)
-            return [TextContent(type="text", text=json.dumps(emails, indent=2))]
-
-        elif name == "get_email_content":
-            email_id = arguments["email_id"]
-            client = get_email_client()
-            email = client.get_email_by_id(email_id)
-            return [TextContent(type="text", text=json.dumps(email, indent=2))]
-
-        elif name == "count_unread":
-            client = get_email_client()
-            count = client.count_unread()
-            return [TextContent(type="text", text=json.dumps({"unread_count": count}))]
-
-        # Calendar tools
-        elif name == "get_today_events":
-            client = get_calendar_client()
-            events = client.get_today_events()
-            return [TextContent(type="text", text=json.dumps(events, indent=2))]
-
-        elif name == "get_week_events":
-            client = get_calendar_client()
-            events = client.get_week_events()
-            return [TextContent(type="text", text=json.dumps(events, indent=2))]
-
-        elif name == "get_events_range":
-            start_date = datetime.fromisoformat(arguments["start_date"])
-            end_date = datetime.fromisoformat(arguments["end_date"])
-            client = get_calendar_client()
-            events = client.get_events_range(start_date, end_date)
-            return [TextContent(type="text", text=json.dumps(events, indent=2))]
-
-        elif name == "search_events":
-            query = arguments["query"]
-            days = arguments.get("days", 30)
-            client = get_calendar_client()
-            events = client.search_events(query=query, days=days)
-            return [TextContent(type="text", text=json.dumps(events, indent=2))]
-
-        elif name == "check_availability":
-            date_str = arguments.get("date")
-            date = datetime.fromisoformat(date_str) if date_str else None
-            client = get_calendar_client()
-            availability = client.check_availability(date)
-            return [TextContent(type="text", text=json.dumps(availability, indent=2))]
-
-        # Smart analysis tools
-        elif name == "generate_priority_list":
-            date_str = arguments.get("date")
-            date = datetime.fromisoformat(date_str) if date_str else None
-            analyzer = get_priority_analyzer()
-            priority_list = analyzer.generate_priority_list(date)
-            return [TextContent(type="text", text=json.dumps(priority_list, indent=2))]
-
-        elif name == "daily_briefing":
-            analyzer = get_priority_analyzer()
-            briefing = analyzer.daily_briefing()
-            return [TextContent(type="text", text=json.dumps(briefing, indent=2))]
-
-        elif name == "analyze_workload":
-            days = arguments.get("days", 7)
-            analyzer = get_priority_analyzer()
-            analysis = analyzer.analyze_workload(days=days)
-            return [TextContent(type="text", text=json.dumps(analysis, indent=2))]
-
-        else:
-            return [TextContent(type="text", text=f"Unknown tool: {name}")]
+        logger.info(f"Session status checked: logged_in={status.get('logged_in', False)}")
+        return status
 
     except Exception as e:
-        logger.error(f"Error calling tool {name}: {str(e)}", exc_info=True)
-        return [TextContent(type="text", text=json.dumps({"error": str(e)}))]
+        logger.error(f"Error checking session status: {e}")
+        return {
+            "logged_in": False,
+            "error": str(e),
+            "message": "Failed to check session status"
+        }
 
 
-async def main():
-    """Main entry point"""
-    logger.info("Starting Outlook MCP Server (Read-Only)")
+@mcp.tool()
+def session_login() -> Dict[str, Any]:
+    """
+    Initiate interactive login to Outlook.com.
 
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(read_stream, write_stream, app.create_initialization_options())
+    For first-time setup, this requires the service to run with headless=False
+    so the user can complete login and 2FA in a visible browser window.
+
+    After successful login, the session is saved and future requests can run headless.
+
+    Returns:
+        Dictionary with login status and instructions:
+        - success: bool - Whether login was successful
+        - message: str - Status or instruction message
+        - instructions: str - Step-by-step setup instructions (if needed)
+        - session_file: str - Path to saved session (if successful)
+    """
+    try:
+        client = get_client()
+        result = client.perform_interactive_login()
+
+        logger.info(f"Login attempt result: success={result.get('success', False)}")
+        return result
+
+    except Exception as e:
+        logger.error(f"Error during login: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to perform login"
+        }
+
+
+@mcp.tool()
+def email_list_unread(limit: int = 20) -> List[Dict[str, Any]]:
+    """
+    List unread emails from Outlook inbox.
+
+    Retrieves a list of unread emails with basic information including
+    sender, subject, preview, and date received.
+
+    Args:
+        limit: Maximum number of emails to return (default: 20, max: 50)
+
+    Returns:
+        List of email dictionaries, each containing:
+        - id: str - Email identifier
+        - subject: str - Email subject line
+        - sender: str - Sender name/email
+        - preview: str - Email preview text
+        - date: str - Date received
+        - unread: bool - Unread status (always True)
+
+    Raises:
+        OutlookLoginRequiredError: If session is invalid or expired
+    """
+    try:
+        # Validate limit
+        limit = max(1, min(limit, 50))
+
+        client = get_client()
+        emails = client.get_unread_emails(limit=limit)
+
+        logger.info(f"Retrieved {len(emails)} unread emails")
+        return emails
+
+    except OutlookLoginRequiredError as e:
+        logger.warning(f"Login required: {e}")
+        return [{
+            "error": "login_required",
+            "message": str(e),
+            "action": "Call session_login() to authenticate"
+        }]
+
+    except Exception as e:
+        logger.error(f"Error listing unread emails: {e}")
+        return [{
+            "error": "fetch_failed",
+            "message": str(e)
+        }]
+
+
+@mcp.tool()
+def email_read(email_id: str) -> Dict[str, Any]:
+    """
+    Read a specific email by ID.
+
+    Retrieves the full content of an email including body, attachments,
+    and complete metadata.
+
+    Args:
+        email_id: Email identifier from email_list_unread()
+
+    Returns:
+        Dictionary containing:
+        - id: str - Email identifier
+        - subject: str - Email subject
+        - sender: str - Sender information
+        - date: str - Date received
+        - body: str - Email body content
+        - attachments: List - Attachment information
+
+    Raises:
+        OutlookLoginRequiredError: If session is invalid or expired
+    """
+    try:
+        client = get_client()
+        email = client.read_email(email_id)
+
+        logger.info(f"Read email: {email_id}")
+        return email
+
+    except OutlookLoginRequiredError as e:
+        logger.warning(f"Login required: {e}")
+        return {
+            "error": "login_required",
+            "message": str(e),
+            "action": "Call session_login() to authenticate"
+        }
+
+    except Exception as e:
+        logger.error(f"Error reading email: {e}")
+        return {
+            "error": "read_failed",
+            "message": str(e),
+            "email_id": email_id
+        }
+
+
+@mcp.tool()
+def email_search(query: str, limit: int = 20) -> List[Dict[str, Any]]:
+    """
+    Search emails by query string.
+
+    Searches through emails using Outlook's search functionality.
+    Supports searching by sender, subject, content, and date.
+
+    Args:
+        query: Search query (e.g., "from:john@example.com", "subject:meeting")
+        limit: Maximum results to return (default: 20, max: 50)
+
+    Returns:
+        List of matching email dictionaries, each containing:
+        - id: str - Email identifier
+        - subject: str - Email subject
+        - sender: str - Sender information
+        - preview: str - Email preview
+        - date: str - Date received
+
+    Raises:
+        OutlookLoginRequiredError: If session is invalid or expired
+    """
+    try:
+        # Validate inputs
+        if not query or not query.strip():
+            return [{
+                "error": "invalid_query",
+                "message": "Search query cannot be empty"
+            }]
+
+        limit = max(1, min(limit, 50))
+
+        client = get_client()
+        results = client.search_emails(query=query.strip(), limit=limit)
+
+        logger.info(f"Search for '{query}' returned {len(results)} results")
+        return results
+
+    except OutlookLoginRequiredError as e:
+        logger.warning(f"Login required: {e}")
+        return [{
+            "error": "login_required",
+            "message": str(e),
+            "action": "Call session_login() to authenticate"
+        }]
+
+    except Exception as e:
+        logger.error(f"Error searching emails: {e}")
+        return [{
+            "error": "search_failed",
+            "message": str(e),
+            "query": query
+        }]
+
+
+@mcp.tool()
+def calendar_list_today() -> List[Dict[str, Any]]:
+    """
+    List today's calendar events.
+
+    Retrieves all calendar events scheduled for today from Outlook calendar.
+
+    Returns:
+        List of event dictionaries, each containing:
+        - id: str - Event identifier
+        - title: str - Event title
+        - time: str - Event time
+        - location: str - Event location
+        - details: str - Additional event details
+
+    Raises:
+        OutlookLoginRequiredError: If session is invalid or expired
+    """
+    try:
+        client = get_client()
+        events = client.get_calendar_events_today()
+
+        logger.info(f"Retrieved {len(events)} events for today")
+        return events
+
+    except OutlookLoginRequiredError as e:
+        logger.warning(f"Login required: {e}")
+        return [{
+            "error": "login_required",
+            "message": str(e),
+            "action": "Call session_login() to authenticate"
+        }]
+
+    except Exception as e:
+        logger.error(f"Error listing today's events: {e}")
+        return [{
+            "error": "fetch_failed",
+            "message": str(e)
+        }]
+
+
+@mcp.tool()
+def calendar_list_week() -> List[Dict[str, Any]]:
+    """
+    List this week's calendar events.
+
+    Retrieves all calendar events scheduled for the current week
+    from Outlook calendar.
+
+    Returns:
+        List of event dictionaries, each containing:
+        - id: str - Event identifier
+        - title: str - Event title
+        - time: str - Event time/date
+        - location: str - Event location
+        - details: str - Additional event details
+
+    Raises:
+        OutlookLoginRequiredError: If session is invalid or expired
+    """
+    try:
+        client = get_client()
+        events = client.get_calendar_events_week()
+
+        logger.info(f"Retrieved {len(events)} events for the week")
+        return events
+
+    except OutlookLoginRequiredError as e:
+        logger.warning(f"Login required: {e}")
+        return [{
+            "error": "login_required",
+            "message": str(e),
+            "action": "Call session_login() to authenticate"
+        }]
+
+    except Exception as e:
+        logger.error(f"Error listing week's events: {e}")
+        return [{
+            "error": "fetch_failed",
+            "message": str(e)
+        }]
+
+
+# Cleanup on shutdown
+@mcp.on_shutdown
+async def cleanup():
+    """Clean up resources on server shutdown."""
+    global outlook_client
+
+    if outlook_client:
+        logger.info("Cleaning up Outlook client")
+        try:
+            outlook_client.close()
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+        finally:
+            outlook_client = None
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    # Log startup configuration
+    logger.info("=" * 60)
+    logger.info("Outlook MCP Server Starting")
+    logger.info("=" * 60)
+    logger.info(f"Session directory: {SESSION_DIR}")
+    logger.info(f"Headless mode: {HEADLESS}")
+    logger.info(f"Timeout: {TIMEOUT}ms")
+    logger.info("=" * 60)
+
+    # Create session directory if it doesn't exist
+    SESSION_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Run the server
+    mcp.run(transport="stdio")
