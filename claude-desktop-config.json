@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "google": {
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-google", "python3", "/app/server.py"],
+      "env": {}
+    },
+    "outlook": {
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-outlook", "python3", "/app/server.py"],
+      "env": {}
+    },
+    "todoist": {
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-todoist", "python3", "/app/server.py"],
+      "env": {}
+    },
+    "integrator": {
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-integrator", "python3", "/app/server.py"],
+      "env": {}
+    },
+    "hydraulic": {
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-hydraulic", "python3", "/app/server.py"],
+      "env": {}
+    }
+  }
+}
