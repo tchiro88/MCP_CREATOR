@@ -18,6 +18,7 @@ venv/
 env/
 ENV/
 .venv
+oauth_venv/
 
 # OS files
 .DS_Store
@@ -53,3 +54,15 @@ deployment/credentials/
 *_secret_*
 *-secret-*
 *.json.backup
+
+# OAuth temporary files
+complete_oauth.py
+generate_google_token.py
+generate_token.py
+generate_token_port.py
+get_oauth_url.py
+manual_oauth.py
+exchange_code.py
+OAUTH-*.md
+WHEN-YOU-RETURN.md
+QUICK_START.txt
