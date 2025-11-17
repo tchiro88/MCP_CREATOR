@@ -20,6 +20,24 @@ This guide walks you through setting up Cloudflare Tunnel to access your MCP ser
 ✅ SSH access to your Proxmox LXC container 200
 ✅ Cloudflare account (sign up at https://dash.cloudflare.com)
 
+## Quick Start Options
+
+**Choose your preferred method:**
+
+1. **Automated Script (Easiest)** - Run the setup script that handles everything:
+   ```bash
+   # SSH into Proxmox host, then:
+   pct enter 200
+   cd /opt/MCP_CREATOR/deployment
+   bash setup-cloudflare-tunnel.sh
+   ```
+   See: [deployment/setup-cloudflare-tunnel.sh](deployment/setup-cloudflare-tunnel.sh)
+
+2. **Command Reference (Fast)** - Copy-paste commands from the reference:
+   See: [TUNNEL-SETUP-COMMANDS.md](TUNNEL-SETUP-COMMANDS.md)
+
+3. **Step-by-Step Guide (Detailed)** - Follow the detailed guide below with explanations
+
 ## Architecture
 
 ```
