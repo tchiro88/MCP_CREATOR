@@ -42,6 +42,7 @@ Choose your path:
 ### Getting Started
 - **[SETUP.md](SETUP.md)** - Complete setup guide for all MCP services
 - **[CLOUDFLARE-TUNNEL-SETUP.md](CLOUDFLARE-TUNNEL-SETUP.md)** - Remote access setup for any device (iPhone, laptop, etc.)
+- **[TUNNEL-SETUP-COMMANDS.md](TUNNEL-SETUP-COMMANDS.md)** - Quick command reference for SSH/terminal setup
 - **[CREDENTIALS-GUIDE.md](CREDENTIALS-GUIDE.md)** - How to obtain credentials for all services
 - **[CLAUDE-DESKTOP-SETUP.md](CLAUDE-DESKTOP-SETUP.md)** - Claude Desktop configuration guide
 
