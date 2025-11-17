@@ -118,11 +118,95 @@ asyncio.run(login())
 
 **Note:** If headless login fails due to 2FA, you may need to run with headless=False on a machine with display.
 
+## Remote Access via Cloudflare Tunnel
+
+To access your MCP services from any device (iPhone, laptop, etc.) without port forwarding:
+
+### Quick Setup
+
+**Step 1: Install cloudflared**
+```bash
+# In LXC Container 200
+cd /tmp
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared-linux-amd64.deb
+cloudflared --version
+```
+
+**Step 2: Authenticate and Create Tunnel**
+```bash
+# Login to Cloudflare
+cloudflared tunnel login
+
+# Create tunnel
+cloudflared tunnel create autosapien-mcp
+# Note the tunnel ID shown in output!
+```
+
+**Step 3: Configure DNS Routes**
+```bash
+cloudflared tunnel route dns autosapien-mcp google.autosapien.ai
+cloudflared tunnel route dns autosapien-mcp outlook.autosapien.ai
+cloudflared tunnel route dns autosapien-mcp todoist.autosapien.ai
+cloudflared tunnel route dns autosapien-mcp icloud.autosapien.ai
+cloudflared tunnel route dns autosapien-mcp integrator.autosapien.ai
+cloudflared tunnel route dns autosapien-mcp hydraulic.autosapien.ai
+```
+
+**Step 4: Copy and Update Configuration**
+```bash
+# Copy configuration file
+mkdir -p ~/.cloudflared
+cp /opt/MCP_CREATOR/deployment/cloudflared-config.autosapien.yml ~/.cloudflared/config.yml
+
+# Edit config and replace YOUR_TUNNEL_ID_HERE with your actual tunnel ID
+nano ~/.cloudflared/config.yml
+
+# Validate configuration
+cloudflared tunnel ingress validate
+```
+
+**Step 5: Install and Start Service**
+```bash
+# Install as system service
+sudo cloudflared service install
+
+# Start and enable
+sudo systemctl start cloudflared
+sudo systemctl enable cloudflared
+
+# Check status
+sudo systemctl status cloudflared
+```
+
+**Step 6: Test Access**
+```bash
+# From any device with internet
+curl -I https://google.autosapien.ai
+curl -I https://outlook.autosapien.ai
+curl -I https://integrator.autosapien.ai
+```
+
+### Detailed Guide
+
+For complete step-by-step instructions with troubleshooting, see:
+- **[CLOUDFLARE-TUNNEL-SETUP.md](CLOUDFLARE-TUNNEL-SETUP.md)** - Complete guide with verification steps
+
+**Services exposed:**
+- `google.autosapien.ai` - Google MCP (Gmail, Drive, Calendar)
+- `outlook.autosapien.ai` - Outlook MCP (Email, Calendar)
+- `todoist.autosapien.ai` - Todoist MCP (Tasks)
+- `icloud.autosapien.ai` - iCloud MCP (Mail, Calendar, Contacts)
+- `integrator.autosapien.ai` - Integrator MCP (Unified interface)
+- `hydraulic.autosapien.ai` - Hydraulic MCP (Schematic analysis)
+
 ## Claude Desktop Configuration
 
-Copy this configuration to your Claude Desktop settings:
-
 **Location:** `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+
+### Option 1: Local Access (Docker Exec)
+
+Use this if Claude Desktop is running on the same machine/network as your Docker containers:
 
 ```json
 {
@@ -142,6 +226,11 @@ Copy this configuration to your Claude Desktop settings:
       "args": ["exec", "-i", "mcp-todoist", "python3", "/app/server.py"],
       "env": {}
     },
+    "icloud": {
+      "command": "docker",
+      "args": ["exec", "-i", "mcp-icloud", "python3", "/app/server.py"],
+      "env": {}
+    },
     "integrator": {
       "command": "docker",
       "args": ["exec", "-i", "mcp-integrator", "python3", "/app/server.py"],
@@ -157,6 +246,49 @@ Copy this configuration to your Claude Desktop settings:
 ```
 
 **Note:** Requires Docker access from your local machine to container 200.
+
+### Option 2: Remote Access (Cloudflare Tunnel) **Recommended**
+
+Use this for access from any device (iPhone, laptop, desktop) anywhere:
+
+```json
+{
+  "mcpServers": {
+    "google": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-http", "https://google.autosapien.ai"]
+    },
+    "outlook": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-http", "https://outlook.autosapien.ai"]
+    },
+    "todoist": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-http", "https://todoist.autosapien.ai"]
+    },
+    "icloud": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-http", "https://icloud.autosapien.ai"]
+    },
+    "integrator": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-http", "https://integrator.autosapien.ai"]
+    },
+    "hydraulic": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-http", "https://hydraulic.autosapien.ai"]
+    }
+  }
+}
+```
+
+**Benefits:**
+- ✅ Works from any device with internet
+- ✅ No VPN or SSH tunneling needed
+- ✅ Secure via Cloudflare encryption
+- ✅ DDoS protection included
+
+**Prerequisites:** Complete [Cloudflare Tunnel Setup](#remote-access-via-cloudflare-tunnel) first.
 
 ## Troubleshooting
 
@@ -242,10 +374,11 @@ MCP_CREATOR/
 
 ## Next Steps
 
-1. Configure Google OAuth (if not done)
-2. Set up Outlook Playwright login
-3. Configure other services as needed
-4. Add to Claude Desktop
-5. Test each service
+1. ✅ Configure Google OAuth (if not done)
+2. ✅ Set up Outlook Playwright login
+3. ✅ Configure other services as needed
+4. ✅ Set up Cloudflare Tunnel for remote access (see [CLOUDFLARE-TUNNEL-SETUP.md](CLOUDFLARE-TUNNEL-SETUP.md))
+5. ✅ Add to Claude Desktop (use Option 2 for remote access)
+6. ✅ Test each service
 
 For detailed service-specific information, see each service's README in `mcp/[service]/README.md`

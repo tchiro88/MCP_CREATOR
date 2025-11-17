@@ -1,0 +1,195 @@
+# Cloudflare Tunnel Configuration for autosapien.ai
+# MCP Services Remote Access Configuration
+#
+# SETUP INSTRUCTIONS:
+# 1. Install cloudflared: wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && sudo dpkg -i cloudflared-linux-amd64.deb
+# 2. Authenticate: cloudflared tunnel login
+# 3. Create tunnel: cloudflared tunnel create autosapien-mcp
+# 4. Copy tunnel ID and replace YOUR_TUNNEL_ID_HERE below
+# 5. Route DNS for all services (see commands at bottom)
+# 6. Copy this file to ~/.cloudflared/config.yml
+# 7. Run tunnel: cloudflared tunnel run autosapien-mcp
+# 8. Install as service: sudo cloudflared service install
+
+# ============================================================================
+# Tunnel Configuration
+# ============================================================================
+tunnel: YOUR_TUNNEL_ID_HERE
+credentials-file: /root/.cloudflared/YOUR_TUNNEL_ID_HERE.json
+
+# ============================================================================
+# Ingress Rules - Routes for all autosapien.ai MCP Services
+# ============================================================================
+ingress:
+  # -----------------------------------------------
+  # Google MCP Server - Gmail, Drive, Calendar, Photos
+  # Port: 3004 | OAuth Configured
+  # -----------------------------------------------
+  - hostname: google.autosapien.ai
+    service: http://localhost:3004
+    originRequest:
+      httpHostHeader: google.autosapien.ai
+      connectTimeout: 30s
+      noTLSVerify: false
+
+  # -----------------------------------------------
+  # Todoist MCP Server - Task Management
+  # Port: 3005 | API Token Auth
+  # -----------------------------------------------
+  - hostname: todoist.autosapien.ai
+    service: http://localhost:3005
+    originRequest:
+      httpHostHeader: todoist.autosapien.ai
+      connectTimeout: 30s
+      noTLSVerify: false
+
+  # -----------------------------------------------
+  # iCloud MCP Server - Mail, Calendar, Contacts, Drive
+  # Port: 3009 | Username/Password Auth
+  # -----------------------------------------------
+  - hostname: icloud.autosapien.ai
+    service: http://localhost:3009
+    originRequest:
+      httpHostHeader: icloud.autosapien.ai
+      connectTimeout: 30s
+      noTLSVerify: false
+
+  # -----------------------------------------------
+  # Outlook MCP Server - Email, Calendar (READ-ONLY)
+  # Port: 3010 | Playwright Auth
+  # -----------------------------------------------
+  - hostname: outlook.autosapien.ai
+    service: http://localhost:3010
+    originRequest:
+      httpHostHeader: outlook.autosapien.ai
+      connectTimeout: 30s
+      noTLSVerify: false
+
+  # -----------------------------------------------
+  # Integrator MCP Server - Cross-Service Orchestration
+  # Port: 3011 | Unified Interface for All Services
+  # -----------------------------------------------
+  - hostname: integrator.autosapien.ai
+    service: http://localhost:3011
+    originRequest:
+      httpHostHeader: integrator.autosapien.ai
+      connectTimeout: 30s
+      noTLSVerify: false
+
+  # -----------------------------------------------
+  # Hydraulic MCP Server - AI Schematic Analysis
+  # Port: 3012 | OpenAI-Powered Analysis
+  # -----------------------------------------------
+  - hostname: hydraulic.autosapien.ai
+    service: http://localhost:3012
+    originRequest:
+      httpHostHeader: hydraulic.autosapien.ai
+      connectTimeout: 30s
+      noTLSVerify: false
+
+  # -----------------------------------------------
+  # Catch-all rule (REQUIRED - must be last)
+  # -----------------------------------------------
+  - service: http_status:404
+
+# ============================================================================
+# Optional: Tunnel-level Configuration
+# ============================================================================
+
+# Metrics server (for monitoring tunnel performance)
+# Uncomment to enable metrics at http://localhost:9090/metrics
+# metrics: 0.0.0.0:9090
+
+# Protocol version (defaults to auto)
+protocol: auto
+
+# Number of connections to maintain (for high availability)
+# Cloudflare recommends 4 for production
+# replicas: 4
+
+# Grace period before shutting down
+grace-period: 30s
+
+# Log level (options: debug, info, warn, error, fatal)
+loglevel: info
+
+# ============================================================================
+# DNS ROUTING COMMANDS
+# ============================================================================
+# Run these commands after creating your tunnel to route DNS:
+#
+# cloudflared tunnel route dns autosapien-mcp google.autosapien.ai
+# cloudflared tunnel route dns autosapien-mcp todoist.autosapien.ai
+# cloudflared tunnel route dns autosapien-mcp icloud.autosapien.ai
+# cloudflared tunnel route dns autosapien-mcp outlook.autosapien.ai
+# cloudflared tunnel route dns autosapien-mcp integrator.autosapien.ai
+# cloudflared tunnel route dns autosapien-mcp hydraulic.autosapien.ai
+
+# ============================================================================
+# SERVICE MANAGEMENT COMMANDS
+# ============================================================================
+#
+# Test tunnel (run manually):
+#   cloudflared tunnel run autosapien-mcp
+#
+# Install as system service:
+#   sudo cloudflared service install
+#
+# Start service:
+#   sudo systemctl start cloudflared
+#
+# Enable on boot:
+#   sudo systemctl enable cloudflared
+#
+# Check status:
+#   sudo systemctl status cloudflared
+#
+# View logs:
+#   sudo journalctl -u cloudflared -f
+#
+# Stop service:
+#   sudo systemctl stop cloudflared
+#
+# Restart service:
+#   sudo systemctl restart cloudflared
+
+# ============================================================================
+# VERIFY TUNNEL IS WORKING
+# ============================================================================
+# 1. Check tunnel status in Cloudflare dashboard:
+#    https://one.dash.cloudflare.com/ -> Networks -> Tunnels
+#
+# 2. Test each service endpoint:
+#    curl https://google.autosapien.ai/health
+#    curl https://todoist.autosapien.ai/health
+#    curl https://icloud.autosapien.ai/health
+#    curl https://outlook.autosapien.ai/health
+#    curl https://integrator.autosapien.ai/health
+#    curl https://hydraulic.autosapien.ai/health
+#
+# 3. Check MCP connection from Claude Desktop using the remote URLs
+
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+# Issue: 502 Bad Gateway
+# Solution: Ensure Docker containers are running (docker ps) and ports match
+#
+# Issue: Tunnel not starting
+# Solution: Check logs with: sudo journalctl -u cloudflared -f
+#
+# Issue: DNS not resolving
+# Solution: Wait 1-5 minutes for DNS propagation, verify CNAME records in Cloudflare
+#
+# Issue: Authentication errors
+# Solution: Verify credentials file path is correct and readable
+
+# ============================================================================
+# SECURITY NOTES
+# ============================================================================
+# 1. All traffic is encrypted via Cloudflare Tunnel (no port forwarding needed)
+# 2. Consider adding Cloudflare Zero Trust Access policies for production
+# 3. Credentials file should be chmod 600 (readable only by owner)
+# 4. Never commit credentials file to git
+# 5. Consider using Cloudflare WAF rules to block malicious traffic
+# 6. Enable rate limiting in Cloudflare dashboard for DDoS protection
