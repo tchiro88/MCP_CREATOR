@@ -13,11 +13,11 @@ Features:
 
 import os
 import json
-import asyncio
+import sys
+import logging
 from typing import Any, Optional
 from datetime import datetime
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
+from mcp.server.fastmcp import FastMCP
 
 # Todoist API import
 try:
@@ -25,7 +25,11 @@ try:
 except ImportError:
     print("ERROR: requests library not installed!")
     print("Install with: pip install requests")
-    exit(1)
+    sys.exit(1)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("todoist-mcp")
 
 # ============================================================================
 # Configuration
@@ -272,328 +276,223 @@ def get_task_comments(task_id: str) -> list[dict]:
     return comments
 
 # ============================================================================
-# MCP Server
+# Initialize FastMCP Server
 # ============================================================================
 
-app = Server(SERVER_NAME)
+mcp = FastMCP(SERVER_NAME)
 
-@app.list_resources()
-async def list_resources() -> list[dict[str, Any]]:
-    """List available Todoist resources"""
-    return [
-        {
-            "uri": "todoist://tasks/today",
-            "name": "Today's Tasks",
-            "description": "All tasks due today",
-            "mimeType": "application/json"
-        },
-        {
-            "uri": "todoist://tasks/all",
-            "name": "All Tasks",
-            "description": "All active tasks",
-            "mimeType": "application/json"
-        },
-        {
-            "uri": "todoist://projects",
-            "name": "Projects",
-            "description": "All Todoist projects",
-            "mimeType": "application/json"
-        }
-    ]
+# ============================================================================
+# MCP Resources
+# ============================================================================
 
-@app.read_resource()
-async def read_resource(uri: str) -> str:
-    """Read a Todoist resource"""
-    if uri == "todoist://tasks/today":
-        tasks = list_tasks(filter_str="today")
-        return json.dumps(tasks, indent=2)
+@mcp.resource("todoist://tasks/today")
+def get_today_tasks() -> str:
+    """Get today's tasks"""
+    tasks = list_tasks(filter_str="today")
+    return json.dumps(tasks, indent=2)
 
-    elif uri == "todoist://tasks/all":
-        tasks = list_tasks()
-        return json.dumps(tasks, indent=2)
+@mcp.resource("todoist://tasks/all")
+def get_all_tasks() -> str:
+    """Get all active tasks"""
+    tasks = list_tasks()
+    return json.dumps(tasks, indent=2)
 
-    elif uri == "todoist://projects":
-        projects = list_projects()
-        return json.dumps(projects, indent=2)
+@mcp.resource("todoist://projects")
+def get_projects() -> str:
+    """Get all projects"""
+    projects = list_projects()
+    return json.dumps(projects, indent=2)
 
-    raise ValueError(f"Unknown resource: {uri}")
+# ============================================================================
+# MCP Tools - Tasks
+# ============================================================================
 
-@app.list_tools()
-async def list_tools() -> list[dict[str, Any]]:
-    """List available Todoist tools"""
-    return [
-        # Task tools
-        {
-            "name": "list_tasks",
-            "description": "List tasks with optional filters",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "project_id": {
-                        "type": "string",
-                        "description": "Filter by project ID (optional)"
-                    },
-                    "filter": {
-                        "type": "string",
-                        "description": "Todoist filter string (e.g., 'today', 'priority 1', 'overdue') (optional)"
-                    }
-                },
-                "required": []
-            }
-        },
-        {
-            "name": "create_task",
-            "description": "Create a new task",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "content": {
-                        "type": "string",
-                        "description": "Task title/content"
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Task description (optional)"
-                    },
-                    "due_string": {
-                        "type": "string",
-                        "description": "Due date in natural language (e.g., 'tomorrow', 'next Monday', '2025-11-10') (optional)"
-                    },
-                    "priority": {
-                        "type": "number",
-                        "description": "Priority: 1 (normal) to 4 (urgent) (optional, default: 1)"
-                    },
-                    "project_id": {
-                        "type": "string",
-                        "description": "Project ID to add task to (optional)"
-                    },
-                    "labels": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Array of label names (optional)"
-                    }
-                },
-                "required": ["content"]
-            }
-        },
-        {
-            "name": "update_task",
-            "description": "Update an existing task",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "task_id": {
-                        "type": "string",
-                        "description": "Task ID to update"
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "New task content (optional)"
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "New description (optional)"
-                    },
-                    "due_string": {
-                        "type": "string",
-                        "description": "New due date (optional)"
-                    },
-                    "priority": {
-                        "type": "number",
-                        "description": "New priority 1-4 (optional)"
-                    }
-                },
-                "required": ["task_id"]
-            }
-        },
-        {
-            "name": "complete_task",
-            "description": "Mark a task as complete",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "task_id": {
-                        "type": "string",
-                        "description": "Task ID to complete"
-                    }
-                },
-                "required": ["task_id"]
-            }
-        },
-        {
-            "name": "delete_task",
-            "description": "Delete a task",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "task_id": {
-                        "type": "string",
-                        "description": "Task ID to delete"
-                    }
-                },
-                "required": ["task_id"]
-            }
-        },
-        # Project tools
-        {
-            "name": "list_projects",
-            "description": "List all projects",
-            "inputSchema": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        },
-        {
-            "name": "create_project",
-            "description": "Create a new project",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Project name"
-                    },
-                    "color": {
-                        "type": "string",
-                        "description": "Color name (e.g., 'red', 'blue') (optional)"
-                    },
-                    "is_favorite": {
-                        "type": "boolean",
-                        "description": "Mark as favorite (optional)"
-                    }
-                },
-                "required": ["name"]
-            }
-        },
-        # Comment tools
-        {
-            "name": "add_comment",
-            "description": "Add a comment to a task",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "task_id": {
-                        "type": "string",
-                        "description": "Task ID to comment on"
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "Comment content"
-                    }
-                },
-                "required": ["task_id", "content"]
-            }
-        },
-        {
-            "name": "get_comments",
-            "description": "Get all comments for a task",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "task_id": {
-                        "type": "string",
-                        "description": "Task ID to get comments for"
-                    }
-                },
-                "required": ["task_id"]
-            }
-        }
-    ]
+@mcp.tool()
+def list_tasks_tool(project_id: Optional[str] = None, filter: Optional[str] = None) -> str:
+    """
+    List tasks with optional filters
 
-@app.call_tool()
-async def call_tool(name: str, arguments: dict) -> list[dict[str, Any]]:
-    """Execute a Todoist tool"""
+    Args:
+        project_id: Filter by project ID (optional)
+        filter: Todoist filter string (e.g., 'today', 'priority 1', 'overdue') (optional)
 
-    # Task tools
-    if name == "list_tasks":
-        result = list_tasks(
-            project_id=arguments.get("project_id"),
-            filter_str=arguments.get("filter")
-        )
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+    Returns:
+        JSON string with task list
+    """
+    result = list_tasks(project_id=project_id, filter_str=filter)
+    return json.dumps(result, indent=2)
 
-    elif name == "create_task":
-        result = create_task(
-            content=arguments["content"],
-            description=arguments.get("description", ""),
-            due_string=arguments.get("due_string"),
-            priority=arguments.get("priority", 1),
-            project_id=arguments.get("project_id"),
-            labels=arguments.get("labels")
-        )
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+@mcp.tool()
+def create_task_tool(content: str, description: str = '', due_string: Optional[str] = None,
+                     priority: int = 1, project_id: Optional[str] = None,
+                     labels: Optional[list[str]] = None) -> str:
+    """
+    Create a new task
 
-    elif name == "update_task":
-        result = update_task(
-            task_id=arguments["task_id"],
-            content=arguments.get("content"),
-            description=arguments.get("description"),
-            due_string=arguments.get("due_string"),
-            priority=arguments.get("priority")
-        )
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+    Args:
+        content: Task title/content
+        description: Task description (optional)
+        due_string: Due date in natural language (e.g., 'tomorrow', 'next Monday') (optional)
+        priority: Priority: 1 (normal) to 4 (urgent) (optional, default: 1)
+        project_id: Project ID to add task to (optional)
+        labels: Array of label names (optional)
 
-    elif name == "complete_task":
-        result = complete_task(arguments["task_id"])
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+    Returns:
+        JSON string with creation result
+    """
+    result = create_task(
+        content=content,
+        description=description,
+        due_string=due_string,
+        priority=priority,
+        project_id=project_id,
+        labels=labels
+    )
+    return json.dumps(result, indent=2)
 
-    elif name == "delete_task":
-        result = delete_task(arguments["task_id"])
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+@mcp.tool()
+def update_task_tool(task_id: str, content: Optional[str] = None,
+                     description: Optional[str] = None, due_string: Optional[str] = None,
+                     priority: Optional[int] = None) -> str:
+    """
+    Update an existing task
 
-    # Project tools
-    elif name == "list_projects":
-        result = list_projects()
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+    Args:
+        task_id: Task ID to update
+        content: New task content (optional)
+        description: New description (optional)
+        due_string: New due date (optional)
+        priority: New priority 1-4 (optional)
 
-    elif name == "create_project":
-        result = create_project(
-            name=arguments["name"],
-            color=arguments.get("color"),
-            is_favorite=arguments.get("is_favorite", False)
-        )
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+    Returns:
+        JSON string with update result
+    """
+    result = update_task(
+        task_id=task_id,
+        content=content,
+        description=description,
+        due_string=due_string,
+        priority=priority
+    )
+    return json.dumps(result, indent=2)
 
-    # Comment tools
-    elif name == "add_comment":
-        result = add_task_comment(
-            task_id=arguments["task_id"],
-            content=arguments["content"]
-        )
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+@mcp.tool()
+def complete_task_tool(task_id: str) -> str:
+    """
+    Mark a task as complete
 
-    elif name == "get_comments":
-        result = get_task_comments(arguments["task_id"])
-        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+    Args:
+        task_id: Task ID to complete
 
-    raise ValueError(f"Unknown tool: {name}")
+    Returns:
+        JSON string with completion result
+    """
+    result = complete_task(task_id)
+    return json.dumps(result, indent=2)
+
+@mcp.tool()
+def delete_task_tool(task_id: str) -> str:
+    """
+    Delete a task
+
+    Args:
+        task_id: Task ID to delete
+
+    Returns:
+        JSON string with deletion result
+    """
+    result = delete_task(task_id)
+    return json.dumps(result, indent=2)
+
+# ============================================================================
+# MCP Tools - Projects
+# ============================================================================
+
+@mcp.tool()
+def list_projects_tool() -> str:
+    """
+    List all projects
+
+    Returns:
+        JSON string with project list
+    """
+    result = list_projects()
+    return json.dumps(result, indent=2)
+
+@mcp.tool()
+def create_project_tool(name: str, color: Optional[str] = None,
+                       is_favorite: bool = False) -> str:
+    """
+    Create a new project
+
+    Args:
+        name: Project name
+        color: Color name (e.g., 'red', 'blue') (optional)
+        is_favorite: Mark as favorite (optional)
+
+    Returns:
+        JSON string with creation result
+    """
+    result = create_project(name=name, color=color, is_favorite=is_favorite)
+    return json.dumps(result, indent=2)
+
+# ============================================================================
+# MCP Tools - Comments
+# ============================================================================
+
+@mcp.tool()
+def add_comment_tool(task_id: str, content: str) -> str:
+    """
+    Add a comment to a task
+
+    Args:
+        task_id: Task ID to comment on
+        content: Comment content
+
+    Returns:
+        JSON string with addition result
+    """
+    result = add_task_comment(task_id=task_id, content=content)
+    return json.dumps(result, indent=2)
+
+@mcp.tool()
+def get_comments_tool(task_id: str) -> str:
+    """
+    Get all comments for a task
+
+    Args:
+        task_id: Task ID to get comments for
+
+    Returns:
+        JSON string with comment list
+    """
+    result = get_task_comments(task_id)
+    return json.dumps(result, indent=2)
 
 # ============================================================================
 # Main Entry Point
 # ============================================================================
 
-async def main():
-    """Run the Todoist MCP server"""
+if __name__ == "__main__":
+    logger.info(f"Starting {SERVER_NAME} v{SERVER_VERSION}")
     print(f"Starting {SERVER_NAME} v{SERVER_VERSION}")
-    print(f"API Token: {TODOIST_API_TOKEN[:8]}..." if TODOIST_API_TOKEN else "No token")
 
     # Test API connection
     try:
         result = api_request("GET", "projects")
         if isinstance(result, dict) and 'error' in result:
+            logger.error(f"Failed to connect to Todoist API: {result['error']}")
             print(f"ERROR: Failed to connect to Todoist API: {result['error']}")
-            exit(1)
-        print(f"✓ Connected to Todoist (found {len(result)} projects)")
+            sys.exit(1)
+        print(f"API Token: {TODOIST_API_TOKEN[:8]}..." if TODOIST_API_TOKEN else "No token")
+        print(f"Connected to Todoist (found {len(result)} projects)")
+        logger.info(f"Connected to Todoist (found {len(result)} projects)")
         print("Server is ready for connections...")
 
-        # Run the server
-        async with stdio_server() as (read_stream, write_stream):
-            await app.run(read_stream, write_stream, app.create_initialization_options())
+        # Run the FastMCP server on HTTP
+        mcp.run()
 
     except Exception as e:
-        print(f"ERROR: {e}")
-        exit(1)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        logger.error(f"Failed to start server: {e}")
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
